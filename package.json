@@ -4,7 +4,6 @@
     "description": "TCSS-460-auth-squared Template - Student starter for Identity and Access Management (IAM) API project",
     "main": "dist/app.js",
     "scripts": {
-        "postinstall": "tsc",
         "build": "tsc -p .",
         "dev": "nodemon --exec ts-node -r tsconfig-paths/register -r dotenv/config src/index.ts",
         "start:full": "npm run docker:up && npm run dev",
