@@ -29,13 +29,18 @@ export const createApp = (): Express => {
     // }));
     app.use(express.json());
 
-    // Serve static files from public directory
-    app.use(express.static(path.join(__dirname, '../public')));
-
-    // Root endpoint (must be before routes to avoid being caught by auth middleware)
-    // Serves index.html from public directory
+    // Root endpoint - API info
     app.get('/', (request: Request, response: Response) => {
-        response.sendFile(path.join(__dirname, '../public/index.html'));
+        response.json({
+            message: 'Auth² API - TCSS 460 Group 5',
+            status: 'running',
+            endpoints: {
+                health: '/jwt_test',
+                docs: '/api-docs',
+                educationalDocs: '/doc'
+            },
+            version: '1.0.0'
+        });
     });
 
     // Load and setup Swagger documentation (must be before routes)
