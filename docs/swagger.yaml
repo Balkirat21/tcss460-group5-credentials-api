@@ -49,6 +49,8 @@ tags:
     description: Authentication endpoints (token required)
   - name: Verification
     description: Email and phone verification
+  - name: Admin
+    description: Admin user management (requires admin role)
   - name: Testing
     description: Development and testing endpoints
 
@@ -514,6 +516,491 @@ paths:
         '500':
           $ref: '#/components/responses/ServerError'
 
+  # ===== ADMIN ENDPOINTS =====
+  /admin/users:
+    post:
+      tags:
+        - Admin
+      summary: Create new user (Admin)
+      description: |
+        Create a new user with a specified role.
+
+        **Required Role:** Admin (3) or higher
+
+        **Hierarchy:** Admins can only create users with roles lower than their own.
+      operationId: adminCreateUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            examples:
+              createUser:
+                value:
+                  firstname: Jane
+                  lastname: Smith
+                  username: janesmith
+                  email: jane.smith@example.com
+                  phone: "2065555678"
+                  password: SecurePass123!
+                  role: 2
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '501':
+          description: Not yet implemented
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Cannot create user with role equal to or higher than your own
+    get:
+      tags:
+        - Admin
+      summary: List all users (Admin)
+      description: |
+        Get paginated list of all users with optional filtering.
+
+        **Required Role:** Admin (3) or higher
+      operationId: adminGetAllUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+            maximum: 100
+          description: Items per page
+        - name: role
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 5
+          description: Filter by role
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, active, suspended, locked]
+          description: Filter by account status
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            default: created_at
+          description: Sort field
+        - name: sortOrder
+          in: query
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: desc
+          description: Sort order
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+                      pagination:
+                        type: object
+                        properties:
+                          page:
+                            type: integer
+                          limit:
+                            type: integer
+                          total:
+                            type: integer
+                          totalPages:
+                            type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '501':
+          description: Not yet implemented
+
+  /admin/users/search:
+    get:
+      tags:
+        - Admin
+      summary: Search users (Admin)
+      description: |
+        Search users by email, username, name, or phone.
+
+        **Required Role:** Admin (3) or higher
+
+      operationId: adminSearchUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      users:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '501':
+          description: Not yet implemented
+
+  /admin/users/stats/dashboard:
+    get:
+      tags:
+        - Admin
+      summary: Get dashboard statistics (Admin)
+      description: |
+        Get system-wide user statistics for admin dashboard.
+
+        **Required Role:** Admin (3) or higher
+
+        **Returns:** Total users, users by role, users by status, verification rates, recent activity.
+
+      operationId: adminGetDashboardStats
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      totalUsers:
+                        type: integer
+                      usersByRole:
+                        type: object
+                      usersByStatus:
+                        type: object
+                      emailVerificationRate:
+                        type: number
+                      phoneVerificationRate:
+                        type: number
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '501':
+          description: Not yet implemented
+
+  /admin/users/{id}:
+    get:
+      tags:
+        - Admin
+      summary: Get user by ID (Admin)
+      description: |
+        Get detailed information about a specific user.
+
+        **Required Role:** Admin (3) or higher
+
+      operationId: adminGetUserById
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: User ID
+      responses:
+        '200':
+          description: User details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: User not found
+        '501':
+          description: Not yet implemented
+    put:
+      tags:
+        - Admin
+      summary: Update user information (Admin)
+      description: |
+        Update user details (firstname, lastname, username, email, phone).
+
+        **Required Role:** Admin (3) or higher
+
+        **Hierarchy Enforcement:** Cannot update users with equal or higher role.
+
+        **Note:** Use separate endpoints to change role or password.
+      operationId: adminUpdateUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstname:
+                  type: string
+                lastname:
+                  type: string
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                phone:
+                  type: string
+      responses:
+        '200':
+          description: User updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: User not found
+        '501':
+          description: Not yet implemented
+    delete:
+      tags:
+        - Admin
+      summary: Delete user (Admin)
+      description: |
+        Soft delete a user (sets account_status to 'locked').
+
+        **Required Role:** Admin (3) or higher
+
+        **Hierarchy Enforcement:** Cannot delete users with equal or higher role.
+
+      operationId: adminDeleteUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: User ID
+      responses:
+        '200':
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: User not found
+        '501':
+          description: Not yet implemented
+
+  /admin/users/{id}/password:
+    put:
+      tags:
+        - Admin
+      summary: Reset user password (Admin)
+      description: |
+        Admin override to reset a user's password without requiring old password.
+
+        **Required Role:** Admin (3) or higher
+
+        **Hierarchy Enforcement:** Cannot reset passwords for users with equal or higher role.
+
+      operationId: adminResetUserPassword
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - newPassword
+              properties:
+                newPassword:
+                  type: string
+                  minLength: 8
+                  description: New password for the user
+      responses:
+        '200':
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: User not found
+        '501':
+          description: Not yet implemented
+
+  /admin/users/{id}/role:
+    put:
+      tags:
+        - Admin
+      summary: Change user role (Admin)
+      description: |
+        Change a user's role within the system.
+
+        **Required Role:** Admin (3) or higher
+
+        **Hierarchy Enforcement:**
+        - Cannot modify users with equal or higher role
+        - Cannot assign roles equal to or higher than your own
+
+        **Example:** An Admin (3) can change User (1) → Moderator (2), but cannot change User (1) → Admin (3) or higher.
+
+      operationId: adminChangeUserRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: User ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - role
+              properties:
+                role:
+                  type: integer
+                  minimum: 1
+                  maximum: 5
+                  description: |
+                    New role for the user:
+                    1 = User
+                    2 = Moderator
+                    3 = Admin
+                    4 = SuperAdmin
+                    5 = Owner
+      responses:
+        '200':
+          description: Role changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: User not found
+        '501':
+          description: Not yet implemented
+
 components:
   # ===== SECURITY SCHEMES =====
   securitySchemes:
@@ -648,6 +1135,56 @@ components:
           type: string
           enum: [pending, active, suspended, locked, deleted]
           example: pending
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        firstname:
+          type: string
+          example: John
+        lastname:
+          type: string
+          example: Doe
+        username:
+          type: string
+          example: johndoe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        phone:
+          type: string
+          example: "2065551234"
+        role:
+          type: integer
+          minimum: 1
+          maximum: 5
+          example: 1
+        roleName:
+          type: string
+          enum: [User, Moderator, Admin, SuperAdmin, Owner]
+          example: User
+        emailVerified:
+          type: boolean
+          example: false
+        phoneVerified:
+          type: boolean
+          example: false
+        accountStatus:
+          type: string
+          enum: [pending, active, suspended, locked]
+          example: active
+        createdAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2024-01-15T10:30:00Z"
 
     UserDetails:
       allOf:

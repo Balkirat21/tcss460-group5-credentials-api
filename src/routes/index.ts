@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { openRoutes } from './open';
 import { closedRoutes } from './closed';
+import { adminRoutes } from './admin';
 
 const routes = Router();
 
@@ -9,6 +10,7 @@ routes.use('', openRoutes);
 
 routes.use('', closedRoutes);
 
-// Admin routes have been removed - students will implement these
+// Admin routes (Person 3's implementation)
+routes.use('/admin', adminRoutes);
 
 export { routes };
