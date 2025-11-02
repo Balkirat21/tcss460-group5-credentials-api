@@ -141,6 +141,9 @@ export class AdminController {
             if (status) {
                 whereClauses.push(`Account_Status = $${paramIndex++}`);
                 queryParams.push(status);
+            } else {
+                // By default, exclude locked (deleted) users unless status filter is specified
+                whereClauses.push(`Account_Status != 'locked'`);
             }
 
             const whereClause = whereClauses.length > 0
