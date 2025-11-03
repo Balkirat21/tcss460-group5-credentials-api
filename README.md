@@ -53,9 +53,9 @@ project_root/
 
 ## 🌐 Deployed API URLs
 
-- **Data Web API (Render):** [https://data-api-group5.onrender.com](https://data-api-group5.onrender.com)  
-- **Credentials Web API (Render):** [https://credentials-api-group5.onrender.com](https://credentials-api-group5.onrender.com)  
-
+- **Data Web API (Render):** [https://tcss460-group5-tv-api.onrender.com](https://tcss460-group5-tv-api.onrender.com)  
+- **Credentials Web API (Render):** [https://tcss460-group5-credentials-api.onrender.com](https://tcss460-group5-credentials-api.onrender.com)
+  
 ---
 
 ## 🧠 Production Sprint Contribution
@@ -131,8 +131,3 @@ Our Production Sprint emphasized collaboration, debugging, and refinement of cri
 | **MD Khan (Shanto)** | Email Verification | Email service configuration and verification logic |
 | **Pham Nguyen** | Authentication | JWT and credential endpoints |
 
----
-
-✅ **Ready for Submission**  
-This README replaces the default Auth² template and reflects your group’s **Production Sprint** progress, team collaboration, and deployed Render links.  
-It meets all required sections requested by your professor.
