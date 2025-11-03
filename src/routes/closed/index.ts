@@ -1,10 +1,7 @@
 import express, { Router } from 'express';
 import { AuthController, VerificationController } from '@controllers';
 import { checkToken, validatePhoneSend, validatePhoneVerify } from '@middleware';
-import {
-    validatePasswordChange,
-    handleValidationErrors
-  } from '@core/middleware/validation';
+import { validatePasswordChange } from '@core/middleware/validation';
 
 
 const closedRoutes: Router = express.Router();
@@ -21,12 +18,7 @@ closedRoutes.use(checkToken);
  * POST /auth/user/password/change
  * TODO: Add validation middleware (validatePasswordChange)
  */
-closedRoutes.post(
-    '/auth/user/password/change',
-    validatePasswordChange,
-    handleValidationErrors,
-    AuthController.changePassword
-  );
+closedRoutes.post('/auth/user/password/change', validatePasswordChange, AuthController.changePassword);
 
 /**
  * Send SMS verification code
