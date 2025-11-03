@@ -141,6 +141,9 @@ export class AdminController {
             if (status) {
                 whereClauses.push(`Account_Status = $${paramIndex++}`);
                 queryParams.push(status);
+            } else {
+                // By default, exclude locked (deleted) users unless status filter is specified
+                whereClauses.push(`Account_Status != 'locked'`);
             }
 
             const whereClause = whereClauses.length > 0
@@ -421,23 +424,487 @@ export class AdminController {
         }
     }
 
+    /**
+     * Search users by email, username, name, or phone
+     * GET /admin/users/search
+     *
+     * Searches across multiple fields with pagination:
+     * - Email (partial match)
+     * - Username (partial match)
+     * - First name (partial match)
+     * - Last name (partial match)
+     * - Phone (partial match)
+     *
+     * @param request - Express request with query parameters (q, page, limit)
+     * @param response - Express response
+     */
     static async searchUsers(request: IJwtRequest, response: Response): Promise<void> {
-        sendError(response, 501, 'Not implemented - Person 4 to complete', ErrorCodes.SRVR_GENERIC_ERROR);
+        try {
+            const searchQuery = request.query.q as string;
+            const page = parseInt(request.query.page as string) || 1;
+            const limit = Math.min(parseInt(request.query.limit as string) || 10, 100);
+
+            // Validate search query
+            if (!searchQuery || searchQuery.trim().length === 0) {
+                return sendError(response, 400, 'Search query is required', ErrorCodes.VALD_INVALID_INPUT);
+            }
+
+            // Validate pagination
+            if (page < 1 || limit < 1) {
+                return sendError(response, 400, 'Invalid pagination parameters', ErrorCodes.VALD_INVALID_INPUT);
+            }
+
+            const searchPattern = `%${searchQuery.trim()}%`;
+
+            // Get total count for pagination
+            const countResult = await pool.query(
+                `SELECT COUNT(*) as total
+                FROM Account
+                WHERE Email ILIKE $1
+                   OR Username ILIKE $1
+                   OR FirstName ILIKE $1
+                   OR LastName ILIKE $1
+                   OR Phone ILIKE $1`,
+                [searchPattern]
+            );
+            const totalUsers = parseInt(countResult.rows[0].total);
+            const totalPages = Math.ceil(totalUsers / limit);
+
+            // Calculate offset
+            const offset = (page - 1) * limit;
+
+            // Search users with pagination
+            const usersResult = await pool.query(
+                `SELECT
+                    Account_ID as id,
+                    FirstName as firstname,
+                    LastName as lastname,
+                    Username as username,
+                    Email as email,
+                    Phone as phone,
+                    Account_Role as role,
+                    Email_Verified as email_verified,
+                    Phone_Verified as phone_verified,
+                    Account_Status as account_status,
+                    Created_At as created_at,
+                    Updated_At as updated_at
+                FROM Account
+                WHERE Email ILIKE $1
+                   OR Username ILIKE $1
+                   OR FirstName ILIKE $1
+                   OR LastName ILIKE $1
+                   OR Phone ILIKE $1
+                ORDER BY Created_At DESC
+                LIMIT $2 OFFSET $3`,
+                [searchPattern, limit, offset]
+            );
+
+            // Format users with role names
+            const users = usersResult.rows.map(user => ({
+                id: user.id,
+                firstname: user.firstname,
+                lastname: user.lastname,
+                username: user.username,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+                roleName: RoleName[user.role as UserRole],
+                emailVerified: user.email_verified,
+                phoneVerified: user.phone_verified,
+                accountStatus: user.account_status,
+                createdAt: user.created_at,
+                updatedAt: user.updated_at
+            }));
+
+            // Build response
+            const responseData = {
+                users,
+                pagination: {
+                    page,
+                    limit,
+                    total: totalUsers,
+                    totalPages
+                },
+                searchQuery
+            };
+
+            sendSuccess(response, responseData, 'Users search completed successfully', 200);
+        } catch (error) {
+            console.error('Error in searchUsers:', error);
+            sendError(response, 500, 'Failed to search users', ErrorCodes.SRVR_GENERIC_ERROR);
+        }
     }
 
+    /**
+     * Update user information
+     * PUT /admin/users/:id
+     *
+     * Allows updating basic user information:
+     * - First name, last name, username, email, phone
+     *
+     * Note: Role hierarchy is enforced via middleware
+     * Note: Use separate endpoints for password and role changes
+     *
+     * @param request - Express request with user ID in params and update data in body
+     * @param response - Express response
+     */
     static async updateUser(request: IJwtRequest, response: Response): Promise<void> {
-        sendError(response, 501, 'Not implemented - Person 4 to complete', ErrorCodes.SRVR_GENERIC_ERROR);
+        try {
+            const userId = parseInt(request.params.id);
+            const { firstname, lastname, username, email, phone } = request.body;
+
+            // Validate user ID
+            if (isNaN(userId)) {
+                return sendError(response, 400, 'Invalid user ID', ErrorCodes.VALD_INVALID_INPUT);
+            }
+
+            // Check if at least one field is being updated
+            if (!firstname && !lastname && !username && !email && !phone) {
+                return sendError(response, 400, 'At least one field must be provided for update', ErrorCodes.VALD_INVALID_INPUT);
+            }
+
+            // Check if user exists
+            const userCheck = await pool.query(
+                'SELECT Account_ID FROM Account WHERE Account_ID = $1',
+                [userId]
+            );
+
+            if (userCheck.rows.length === 0) {
+                return sendError(response, 404, 'User not found', ErrorCodes.USER_NOT_FOUND);
+            }
+
+            // Check for duplicate email, username, or phone (if being updated)
+            if (email || username || phone) {
+                const duplicateCheck = await pool.query(
+                    `SELECT Account_ID, Email, Username, Phone
+                    FROM Account
+                    WHERE (Email = $1 OR Username = $2 OR Phone = $3)
+                      AND Account_ID != $4`,
+                    [email || '', username || '', phone || '', userId]
+                );
+
+                if (duplicateCheck.rows.length > 0) {
+                    const duplicate = duplicateCheck.rows[0];
+                    if (email && duplicate.email === email) {
+                        return sendError(response, 400, 'Email already in use', ErrorCodes.AUTH_EMAIL_EXISTS);
+                    }
+                    if (username && duplicate.username === username) {
+                        return sendError(response, 400, 'Username already in use', ErrorCodes.AUTH_USERNAME_EXISTS);
+                    }
+                    if (phone && duplicate.phone === phone) {
+                        return sendError(response, 400, 'Phone already in use', ErrorCodes.AUTH_PHONE_EXISTS);
+                    }
+                }
+            }
+
+            // Build UPDATE query dynamically based on provided fields
+            const updateFields: string[] = [];
+            const updateValues: any[] = [];
+            let paramIndex = 1;
+
+            if (firstname) {
+                updateFields.push(`FirstName = $${paramIndex++}`);
+                updateValues.push(firstname);
+            }
+            if (lastname) {
+                updateFields.push(`LastName = $${paramIndex++}`);
+                updateValues.push(lastname);
+            }
+            if (username) {
+                updateFields.push(`Username = $${paramIndex++}`);
+                updateValues.push(username);
+            }
+            if (email) {
+                updateFields.push(`Email = $${paramIndex++}`);
+                updateValues.push(email);
+                // Reset email verification if email is changed
+                updateFields.push(`Email_Verified = FALSE`);
+            }
+            if (phone) {
+                updateFields.push(`Phone = $${paramIndex++}`);
+                updateValues.push(phone);
+                // Reset phone verification if phone is changed
+                updateFields.push(`Phone_Verified = FALSE`);
+            }
+
+            // Add updated_at timestamp
+            updateFields.push(`Updated_At = NOW()`);
+
+            // Add user ID as final parameter
+            updateValues.push(userId);
+
+            // Execute update
+            const updateResult = await pool.query(
+                `UPDATE Account
+                SET ${updateFields.join(', ')}
+                WHERE Account_ID = $${paramIndex}
+                RETURNING
+                    Account_ID as id,
+                    FirstName as firstname,
+                    LastName as lastname,
+                    Username as username,
+                    Email as email,
+                    Phone as phone,
+                    Account_Role as role,
+                    Email_Verified as email_verified,
+                    Phone_Verified as phone_verified,
+                    Account_Status as account_status,
+                    Created_At as created_at,
+                    Updated_At as updated_at`,
+                updateValues
+            );
+
+            const updatedUser = updateResult.rows[0];
+
+            // Format response
+            const userResponse = {
+                id: updatedUser.id,
+                firstname: updatedUser.firstname,
+                lastname: updatedUser.lastname,
+                username: updatedUser.username,
+                email: updatedUser.email,
+                phone: updatedUser.phone,
+                role: updatedUser.role,
+                roleName: RoleName[updatedUser.role as UserRole],
+                emailVerified: updatedUser.email_verified,
+                phoneVerified: updatedUser.phone_verified,
+                accountStatus: updatedUser.account_status,
+                createdAt: updatedUser.created_at,
+                updatedAt: updatedUser.updated_at
+            };
+
+            sendSuccess(response, userResponse, 'User updated successfully', 200);
+        } catch (error) {
+            console.error('Error in updateUser:', error);
+            sendError(response, 500, 'Failed to update user', ErrorCodes.SRVR_GENERIC_ERROR);
+        }
     }
 
+    /**
+     * Delete user (soft delete)
+     * DELETE /admin/users/:id
+     *
+     * Performs a soft delete by setting account_status to 'locked'
+     * Role hierarchy is enforced via middleware
+     *
+     * @param request - Express request with user ID in params
+     * @param response - Express response
+     */
     static async deleteUser(request: IJwtRequest, response: Response): Promise<void> {
-        sendError(response, 501, 'Not implemented - Person 4 to complete', ErrorCodes.SRVR_GENERIC_ERROR);
+        try {
+            const userId = parseInt(request.params.id);
+
+            // Validate user ID
+            if (isNaN(userId)) {
+                return sendError(response, 400, 'Invalid user ID', ErrorCodes.VALD_INVALID_INPUT);
+            }
+
+            // Prevent admin from deleting themselves
+            if (userId === request.claims.id) {
+                return sendError(response, 400, 'Cannot delete your own account', ErrorCodes.VALD_INVALID_INPUT);
+            }
+
+            // Check if user exists
+            const userCheck = await pool.query(
+                'SELECT Account_ID, Account_Status FROM Account WHERE Account_ID = $1',
+                [userId]
+            );
+
+            if (userCheck.rows.length === 0) {
+                return sendError(response, 404, 'User not found', ErrorCodes.USER_NOT_FOUND);
+            }
+
+            // Check if already deleted
+            if (userCheck.rows[0].account_status === 'locked') {
+                return sendError(response, 400, 'User is already deleted', ErrorCodes.VALD_INVALID_INPUT);
+            }
+
+            // Perform soft delete
+            await pool.query(
+                `UPDATE Account
+                SET Account_Status = 'locked', Updated_At = NOW()
+                WHERE Account_ID = $1`,
+                [userId]
+            );
+
+            sendSuccess(
+                response,
+                { id: userId, status: 'locked' },
+                'User deleted successfully',
+                200
+            );
+        } catch (error) {
+            console.error('Error in deleteUser:', error);
+            sendError(response, 500, 'Failed to delete user', ErrorCodes.SRVR_GENERIC_ERROR);
+        }
     }
 
+    /**
+     * Reset user password (admin override)
+     * PUT /admin/users/:id/password
+     *
+     * Allows admin to set a new password without requiring the old one
+     * Role hierarchy is enforced via middleware
+     *
+     * @param request - Express request with user ID in params and newPassword in body
+     * @param response - Express response
+     */
     static async resetUserPassword(request: IJwtRequest, response: Response): Promise<void> {
-        sendError(response, 501, 'Not implemented - Person 4 to complete', ErrorCodes.SRVR_GENERIC_ERROR);
+        try {
+            const userId = parseInt(request.params.id);
+            const { newPassword } = request.body;
+
+            // Validate user ID
+            if (isNaN(userId)) {
+                return sendError(response, 400, 'Invalid user ID', ErrorCodes.VALD_INVALID_INPUT);
+            }
+
+            // Validate new password
+            if (!newPassword || newPassword.trim().length === 0) {
+                return sendError(response, 400, 'New password is required', ErrorCodes.VALD_INVALID_INPUT);
+            }
+
+            // Basic password strength check
+            if (newPassword.length < 8) {
+                return sendError(response, 400, 'Password must be at least 8 characters long', ErrorCodes.VALD_INVALID_INPUT);
+            }
+
+            // Check if user exists
+            const userCheck = await pool.query(
+                'SELECT Account_ID FROM Account WHERE Account_ID = $1',
+                [userId]
+            );
+
+            if (userCheck.rows.length === 0) {
+                return sendError(response, 404, 'User not found', ErrorCodes.USER_NOT_FOUND);
+            }
+
+            // Generate new salt and hash
+            const crypto = require('crypto');
+            const salt = crypto.randomBytes(32).toString('hex');
+            const hash = crypto.createHash('sha256');
+            hash.update(newPassword + salt);
+            const saltedHash = hash.digest('hex');
+
+            // Update password in database
+            await pool.query(
+                `UPDATE Account_Credential
+                SET Salted_Hash = $1, Salt = $2
+                WHERE Account_ID = $3`,
+                [saltedHash, salt, userId]
+            );
+
+            // Update the Account table's Updated_At timestamp
+            await pool.query(
+                'UPDATE Account SET Updated_At = NOW() WHERE Account_ID = $1',
+                [userId]
+            );
+
+            sendSuccess(
+                response,
+                { id: userId, message: 'Password has been reset' },
+                'Password reset successfully',
+                200
+            );
+        } catch (error) {
+            console.error('Error in resetUserPassword:', error);
+            sendError(response, 500, 'Failed to reset password', ErrorCodes.SRVR_GENERIC_ERROR);
+        }
     }
 
+    /**
+     * Change user role
+     * PUT /admin/users/:id/role
+     *
+     * Enforces role hierarchy:
+     * - Cannot modify users with equal or higher role (enforced by middleware)
+     * - Cannot assign roles equal to or higher than your own
+     *
+     * @param request - Express request with user ID in params and role in body
+     * @param response - Express response
+     */
     static async changeUserRole(request: IJwtRequest, response: Response): Promise<void> {
-        sendError(response, 501, 'Not implemented - Person 4 to complete', ErrorCodes.SRVR_GENERIC_ERROR);
+        try {
+            const userId = parseInt(request.params.id);
+            const { role } = request.body;
+            const adminRole = request.claims.role;
+
+            // Validate user ID
+            if (isNaN(userId)) {
+                return sendError(response, 400, 'Invalid user ID', ErrorCodes.VALD_INVALID_INPUT);
+            }
+
+            // Validate role is provided
+            if (role === undefined || role === null) {
+                return sendError(response, 400, 'Role is required', ErrorCodes.VALD_INVALID_INPUT);
+            }
+
+            // Validate role is within valid range
+            if (role < 1 || role > 5) {
+                return sendError(response, 400, 'Invalid role value', ErrorCodes.VALD_INVALID_ROLE);
+            }
+
+            // Validate admin cannot assign role equal to or higher than their own
+            if (role >= adminRole) {
+                return sendError(
+                    response,
+                    403,
+                    'Cannot assign role equal to or higher than your own',
+                    ErrorCodes.AUTH_UNAUTHORIZED
+                );
+            }
+
+            // Check if user exists
+            const userCheck = await pool.query(
+                'SELECT Account_ID, Account_Role FROM Account WHERE Account_ID = $1',
+                [userId]
+            );
+
+            if (userCheck.rows.length === 0) {
+                return sendError(response, 404, 'User not found', ErrorCodes.USER_NOT_FOUND);
+            }
+
+            const currentRole = userCheck.rows[0].account_role;
+
+            // Check if role is actually changing
+            if (currentRole === role) {
+                return sendError(response, 400, 'User already has this role', ErrorCodes.VALD_INVALID_INPUT);
+            }
+
+            // Update user role
+            const updateResult = await pool.query(
+                `UPDATE Account
+                SET Account_Role = $1, Updated_At = NOW()
+                WHERE Account_ID = $2
+                RETURNING
+                    Account_ID as id,
+                    FirstName as firstname,
+                    LastName as lastname,
+                    Username as username,
+                    Email as email,
+                    Account_Role as role`,
+                [role, userId]
+            );
+
+            const updatedUser = updateResult.rows[0];
+
+            sendSuccess(
+                response,
+                {
+                    id: updatedUser.id,
+                    username: updatedUser.username,
+                    email: updatedUser.email,
+                    previousRole: currentRole,
+                    previousRoleName: RoleName[currentRole as UserRole],
+                    newRole: updatedUser.role,
+                    newRoleName: RoleName[updatedUser.role as UserRole]
+                },
+                'User role updated successfully',
+                200
+            );
+        } catch (error) {
+            console.error('Error in changeUserRole:', error);
+            sendError(response, 500, 'Failed to change user role', ErrorCodes.SRVR_GENERIC_ERROR);
+        }
     }
 }

@@ -95,14 +95,7 @@ adminRoutes.get('/users',
 adminRoutes.get('/users/search',
     requireAdmin,
     // TODO: validateSearch, // Uncomment when Person 1/2 completes this
-    (req: Request, res: Response) => {
-        // TODO: Replace with AdminController.searchUsers when Person 4 completes controller
-        res.status(501).json({
-            success: false,
-            message: 'Admin search users endpoint - Controller pending implementation by Person 4',
-            endpoint: 'GET /admin/users/search'
-        });
-    }
+    AdminController.searchUsers
 );
 
 /**
@@ -153,15 +146,7 @@ adminRoutes.put('/users/:id',
     fetchTargetUserRole('id'),  // Fetches target user's role
     checkRoleHierarchy,         // Ensures requesting user has higher role
     // TODO: validateUpdateUser, // Uncomment when Person 1/2 completes this
-    (req: Request, res: Response) => {
-        // TODO: Replace with AdminController.updateUser when Person 4 completes controller
-        res.status(501).json({
-            success: false,
-            message: 'Admin update user endpoint - Controller pending implementation by Person 4',
-            endpoint: 'PUT /admin/users/:id',
-            requestedId: req.params.id
-        });
-    }
+    AdminController.updateUser
 );
 
 /**
@@ -185,15 +170,7 @@ adminRoutes.delete('/users/:id',
     fetchTargetUserRole('id'),  // Fetches target user's role
     checkRoleHierarchy,         // Ensures requesting user has higher role
     // TODO: validateUserIdParam, // Uncomment when Person 2 completes this
-    (req: Request, res: Response) => {
-        // TODO: Replace with AdminController.deleteUser when Person 4 completes controller
-        res.status(501).json({
-            success: false,
-            message: 'Admin delete user endpoint - Controller pending implementation by Person 4',
-            endpoint: 'DELETE /admin/users/:id',
-            requestedId: req.params.id
-        });
-    }
+    AdminController.deleteUser
 );
 
 /**
@@ -219,15 +196,7 @@ adminRoutes.put('/users/:id/password',
     fetchTargetUserRole('id'),  // Fetches target user's role
     checkRoleHierarchy,         // Ensures requesting user has higher role
     // TODO: validateAdminPasswordReset, // Uncomment when Person 1/2 completes this
-    (req: Request, res: Response) => {
-        // TODO: Replace with AdminController.resetUserPassword when Person 4 completes controller
-        res.status(501).json({
-            success: false,
-            message: 'Admin reset password endpoint - Controller pending implementation by Person 4',
-            endpoint: 'PUT /admin/users/:id/password',
-            requestedId: req.params.id
-        });
-    }
+    AdminController.resetUserPassword
 );
 
 /**
@@ -265,15 +234,7 @@ adminRoutes.put('/users/:id/role',
     fetchTargetUserRole('id'),  // Fetches target user's role
     checkRoleHierarchy,         // Ensures requesting user has higher role
     // TODO: validateChangeRole, // Uncomment when Person 1/2 completes this
-    (req: Request, res: Response) => {
-        // TODO: Replace with AdminController.changeUserRole when Person 4 completes controller
-        res.status(501).json({
-            success: false,
-            message: 'Admin change role endpoint - Controller pending implementation by Person 4',
-            endpoint: 'PUT /admin/users/:id/role',
-            requestedId: req.params.id
-        });
-    }
+    AdminController.changeUserRole
 );
 
 /**
