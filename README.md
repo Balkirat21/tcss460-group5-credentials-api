@@ -1,7 +1,7 @@
-# 📘 Data Web API – TCSS 460 Production Sprint
+# 📘 Credentials API – TCSS 460 Production Sprint
 
 ### University of Washington Tacoma  
-**Course:** TCSS 460 – Software Engineering  
+**Course:** TCSS 460 
 **Team Members:** Balkirat Singh, Kobe Benavente, MD Khan (Shanto), Pham Nguyen  
 **Branch:** `Testing 2` (work in progress; not yet merged into `main`)
 
@@ -92,7 +92,7 @@ We met twice weekly via **Discord voice calls** and coordinated continuously thr
 - **Saturdays (noon)** – Focused on testing endpoints and Render deployment troubleshooting.  
 
 **Topics Discussed:**  
-- Database design and ER diagram consistency  
+- Configuring database
 - Integration between Data and Credentials APIs  
 - Testing and deployment workflow (Postman → Render → GitHub)  
 - Resolving environment variable and CORS configuration issues  
