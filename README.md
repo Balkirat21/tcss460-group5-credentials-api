@@ -1,340 +1,365 @@
-# TCSS-460-auth-squared Template
+# TCSS 460 – Group 5 Credentials Web API (Identity & Access Management)
 
-**Identity and Access Management (IAM) API - Student Starter Template**
-_Authentication × Authorization = Auth²_
+This repository contains the Group 5 Credentials Web API project for the TCSS 460 Client/Server Programming course. This is a comprehensive **Identity and Access Management (IAM) API** built with Node.js, Express, TypeScript, and PostgreSQL, providing secure user authentication, authorization, and role-based access control.
 
-## Overview
+🌐 **Hosted Credentials API URL (Render)**: https://tcss460-group5-credentials-api.onrender.com
 
-This is the **student starter template** for the Auth² (Auth Squared) project - a comprehensive Identity and Access Management (IAM) API built with Node.js, Express, TypeScript, and PostgreSQL. This template provides the foundational structure and basic authentication features, while leaving key components for you to implement as part of your learning experience.
+📚 **API Documentation**: https://tcss460-group5-credentials-api.onrender.com/api-docs
 
-**Course**: TCSS 460 - Software Engineering
-**Institution**: University of Washington Tacoma
-**Level**: Senior-level undergraduate computer science
+---
 
-## What's Included
+## 🚀 Sprint Contribution
 
-This template provides:
+### Group Members
 
-### ✅ Working Features
-- **Project Structure**: Complete TypeScript/Node.js/Express setup with path aliases
-- **Database Schema**: Full PostgreSQL schema with 4 tables (Account, Account_Credential, Email_Verification, Phone_Verification)
-- **Core Utilities**: Password hashing, JWT generation, email service, database connection
-- **JWT Middleware**: Token validation (`checkToken`) - fully functional
-- **Basic Controllers**: Authentication and verification controllers (without validation)
-- **Documentation Routes**: Serve educational markdown docs as HTML
-- **Test Infrastructure**: Jest + Supertest setup with example utility tests
-- **Development Tools**: TypeScript, ESLint, Prettier, nodemon, Docker Compose
-- **Educational Documentation**: Complete guides in `docs-2.0/` directory
+### **Balkirat Singh**  
+Set up the **PostgreSQL database** for the Credentials API, created schemas and relations, and implemented **admin endpoints**.  
+Also assisted with integration between authentication and show routes. Supported deployment to Render and database debugging.
 
-### 📝 Routes (Without Validation)
-**Public Routes** (Open):
-- `POST /auth/login` - User login
-- `POST /auth/register` - New user registration
-- `POST /auth/password/reset-request` - Request password reset
-- `POST /auth/password/reset` - Reset password with token
-- `GET /auth/verify/carriers` - List SMS carriers
-- `GET /auth/verify/email/confirm?token=xxx` - Verify email
-- `GET /jwt_test` - API health check
-- `GET /doc` - Documentation index
-- `GET /doc/:filename` - Rendered markdown docs
+### **Kobe Benavente**  
+Implemented and tested **admin-related routes**, working closely on role-based access and endpoint validation.  
+Contributed to middleware refinement and assisted in refactoring shared logic across routes.
 
-**Protected Routes** (Closed - Requires JWT):
-- `POST /auth/user/password/change` - Change password
-- `POST /auth/verify/phone/send` - Send SMS verification
-- `POST /auth/verify/phone/verify` - Verify SMS code
-- `POST /auth/verify/email/send` - Send email verification
+### **MD Khan (Shanto)**  
+Developed the **email verification and confirmation** flow for the Credentials API.  
+Handled email service configuration, testing verification logic, and ensuring secure token expiration handling.
 
-## What You Need to Implement
+### **Pham Nguyen**  
+Led work on **authentication and login/register logic** in the Credentials API.  
+Configured JWT authentication, integrated middleware into routes, and assisted with user testing using Postman.
 
-### 🎯 Your Learning Objectives
 
-#### 1. Input Validation (Primary Goal)
-**File**: `src/core/middleware/validation.ts`
+---
 
-The validation middleware file has been gutted. You need to implement express-validator validation chains for:
+## 💬 Sprint Meetings
 
-- `validateLogin` - Email and password validation
-- `validateRegister` - Complete user registration validation
-- `validatePasswordResetRequest` - Email validation
-- `validatePasswordReset` - Token and new password validation
-- `validatePasswordChange` - Old and new password validation
-- `validatePhoneSend` - Carrier validation
-- `validatePhoneVerify` - 6-digit code validation
-- `validateEmailToken` - Token parameter validation
-- `validateUserIdParam` - User ID validation
-- `passwordStrength` (optional) - Strong password requirements
-- `validatePagination` - Page and limit validation
+### Primary Communication Methods
 
-**Learning Focus**:
-- Request validation with express-validator
-- Security best practices (input sanitization)
-- Error handling and user feedback
-- Data type validation and constraints
+- **Discord**: Used for group coordination, sprint planning, and real-time collaboration
+- **GitHub**: Used for version control, pull requests, code reviews, and tracking sprint progress
 
-#### 2. Admin API (Advanced Feature)
-**Files to Create**:
-- `src/controllers/adminController.ts`
-- `src/core/middleware/adminAuth.ts`
-- `src/routes/admin/index.ts`
+### Meeting Details
 
-**Endpoints to Implement**:
-- `POST /admin/users/create` - Create user with specified role
-- `GET /admin/users` - List users (with pagination, filters)
-- `GET /admin/users/search` - Search users
-- `GET /admin/users/:id` - Get user details
-- `PUT /admin/users/:id` - Update user
-- `DELETE /admin/users/:id` - Soft delete user
-- `PUT /admin/users/:id/password` - Admin password reset
-- `PUT /admin/users/:id/role` - Change user role
-- `GET /admin/users/stats/dashboard` - Dashboard statistics
+**When/Where**: Weekly Discord voice meetings and continuous asynchronous collaboration via Discord text channels and GitHub throughout the sprint period.
 
-**Learning Focus**:
-- Role-based access control (RBAC)
-- Role hierarchy enforcement (users can only manage lower/equal roles)
-- Advanced SQL queries (filtering, pagination, search)
-- Admin middleware and authorization checks
-- Soft delete patterns
+**What Was Discussed**:
+- Implementing complete authentication system with JWT tokens
+- Building role-based access control (RBAC) with hierarchical permissions
+- Creating comprehensive validation middleware using express-validator
+- Implementing email and SMS verification systems
+- Developing admin API for user management with proper authorization
+- Setting up PostgreSQL database with Docker
+- Creating extensive API documentation (Swagger + educational guides)
+- Establishing test infrastructure with Jest and Supertest
+- Deploying to Render with environment configuration
+- Coordinating TypeScript implementation and path aliases
 
-## Role Hierarchy
+---
 
-Your admin implementation should enforce this hierarchy:
+## 🧠 Sprint Comments
 
-- **1 - User**: Basic access
-- **2 - Moderator**: User management capabilities
-- **3 - Admin**: Full user CRUD, can create roles ≤ 3
-- **4 - SuperAdmin**: System administration, can create roles ≤ 4
-- **5 - Owner**: Complete control
+- Successfully implemented a **production-ready authentication and authorization API** with industry-standard security practices
+- Complete **JWT-based authentication** system with secure token generation and validation
+- **Role-Based Access Control (RBAC)** with 5-tier hierarchy (User, Moderator, Admin, SuperAdmin, Owner)
+- **Multi-factor verification** supporting both email (48-hour expiry) and SMS (15-minute expiry) verification
+- **Comprehensive validation** using express-validator for all input data with security-focused sanitization
+- **Admin API** with full CRUD operations, pagination, filtering, sorting, and search capabilities
+- **Role hierarchy enforcement** - admins can only manage users with lower roles than their own
+- **SHA256 password hashing** with unique salts per user for secure credential storage
+- **Parameterized SQL queries** throughout codebase for SQL injection prevention
+- **TypeScript implementation** with path aliases for clean, maintainable code structure
+- **Extensive documentation** including Swagger/OpenAPI specs and 29 educational markdown guides
+- **Test infrastructure** established with Jest, Supertest, and 80% coverage requirements
+- **Docker development environment** for consistent PostgreSQL database setup
+- **Soft delete pattern** implemented - accounts are locked/suspended rather than permanently deleted
+- **Rate limiting** on verification endpoints to prevent abuse (email: 5 min, SMS: 1 min)
+- **Account status management** - pending, active, suspended, and locked states
+- **Email enumeration prevention** - consistent responses for security
+- **Password reset** functionality with secure token generation and 1-hour expiry
+- All endpoints return **consistent error messages** with appropriate HTTP status codes (400, 401, 403, 404, 500)
 
-**Rule**: Admins can only create/modify users with roles less than or equal to their own role.
+---
 
-## Getting Started
+## 🗂️ Current Repository Structure
 
-### Prerequisites
-
-```bash
-node --version  # v22.14.0 recommended
-npm --version   # v10+ recommended
+```
+tcss460-group5-credentials-api/
+  .claude/                  # Claude Code custom commands
+  .idea/                    # IDE configuration files
+  ai.prof/                  # AI assistant instructions
+  data/
+    init.sql                # PostgreSQL database schema
+    heroku.sql              # Heroku deployment schema
+  dist/                     # Compiled JavaScript output
+  docs/
+    swagger.yaml            # OpenAPI/Swagger specification
+    Complete_API_Testing.postman_collection.json
+    Admin_Role_Management_Testing.postman_collection.json
+  docs-2.0/                 # Educational documentation (29 guides)
+    API_Documentation.md
+    Authentication_Guide.md
+    RBAC_Guide.md
+    Password_Security_Guide.md
+    JWT_Implementation_Guide.md
+    Validation_Strategies.md
+    Web_Security_Guide.md
+    ... (and 22 more guides)
+  node_modules/
+  src/
+    controllers/
+      authController.ts     # Authentication logic
+      adminController.ts    # Admin user management
+      verificationController.ts  # Email/SMS verification
+      index.ts
+    routes/
+      open/                 # Public routes (no auth required)
+        index.ts
+      closed/               # Protected routes (JWT required)
+        index.ts
+      admin/                # Admin routes (role 3+ required)
+        index.ts
+    core/
+      middleware/
+        jwt.ts              # JWT token validation
+        validation.ts       # Express-validator chains
+        adminAuth.ts        # Role-based authorization
+        index.ts
+      utilities/
+        credentialingUtils.ts  # Password hashing
+        database.ts         # PostgreSQL connection pool
+        emailService.ts     # Email sending (Nodemailer)
+        envConfig.ts        # Environment configuration
+        responseUtils.ts    # Standardized responses
+        validationUtils.ts  # Validation helpers
+        __tests__/          # Unit tests
+        index.ts
+      models/
+        auth.model.ts       # TypeScript interfaces
+        request.model.ts
+        response.model.ts
+        index.ts
+    test/
+      setup.ts              # Jest test configuration
+    app.ts                  # Express app configuration
+    index.ts                # Server entry point
+  .env.example              # Environment variables template
+  .gitignore
+  docker-compose.yml        # PostgreSQL Docker setup
+  jest.config.js            # Jest testing configuration
+  package.json
+  package-lock.json
+  Procfile                  # Heroku deployment config
+  README.md
+  tsconfig.json             # TypeScript configuration
 ```
 
-### Installation
+---
 
-```bash
-# 1. Install dependencies
-npm install
+## 🧩 Sprint Summary
 
-# 2. Set up environment variables
-cp .env.example .env
-# Edit .env with your actual values:
-#   - Database credentials (username, password, database name)
-#   - JWT secret (generate a secure random string)
-#   - Email configuration (if using email verification)
+This project represents a comprehensive **Identity and Access Management (IAM) API** for TCSS 460. The API provides enterprise-grade authentication, authorization, and user management capabilities with a focus on security best practices and educational value.
 
-# 3. Start PostgreSQL with Docker
-docker-compose up -d
+### Key Achievements:
 
-# 4. Initialize database schema
-psql -U your_user -d your_database -f data/init.sql
-# OR if using Docker:
-# docker exec -i postgres-container psql -U tcss460 -d auth-squared < data/init.sql
+#### ✅ Authentication System:
 
-# 5. Run in development mode
-npm run dev
-```
+- **POST /auth/register** – User registration with password hashing and automatic JWT issuance
+- **POST /auth/login** – Secure login with account status verification
+- **POST /auth/password/reset-request** – Password reset via email with secure tokens
+- **POST /auth/password/reset** – Complete password reset flow
+- **POST /auth/user/password/change** – User-initiated password changes (requires current password)
 
-### Development Commands
+#### ✅ Verification System:
 
-```bash
-npm run dev          # Start development server with hot reload
-npm run build        # Compile TypeScript to JavaScript
-npm start            # Run production build
-npm test             # Run all tests
-npm run test:watch   # Run tests in watch mode
-npm run lint         # Run ESLint
-npm run format       # Format code with Prettier
-```
+- **Email Verification**:
+  - POST /auth/verify/email/send – Send verification email
+  - GET /auth/verify/email/confirm?token=xxx – Verify email via link
+  - 64-character secure tokens with 48-hour expiry
+  - Rate limited to 1 per 5 minutes
 
-### Environment Variables
+- **SMS Verification**:
+  - POST /auth/verify/phone/send – Send 6-digit SMS code
+  - POST /auth/verify/phone/verify – Verify SMS code
+  - 15-minute expiry with max 3 attempts
+  - Rate limited to 1 per minute
+  - Email-to-SMS gateway support
 
-Required in `.env`:
-```bash
-# Server
-PORT=8000
-NODE_ENV=development
+- **GET /auth/verify/carriers** – List supported mobile carriers for SMS
 
-# Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=auth_squared_db
-DB_USER=your_user
-DB_PASSWORD=your_password
+#### ✅ Admin API (Role 3+ Required):
 
-# JWT
-JWT_SECRET=your-secret-key-change-this-in-production
-JWT_EXPIRATION=14d
+- **POST /admin/users** – Create users with specified roles (respects role hierarchy)
+- **GET /admin/users** – List all users with pagination, filtering by role/status, sorting
+- **GET /admin/users/search?q=query** – Search users by email, username, name, or phone
+- **GET /admin/users/:id** – Retrieve detailed user information
+- **PUT /admin/users/:id** – Update user details (role hierarchy enforced)
+- **DELETE /admin/users/:id** – Soft delete user (sets status to 'locked')
+- **PUT /admin/users/:id/password** – Admin password reset (no current password required)
+- **PUT /admin/users/:id/role** – Change user role (can only assign roles lower than admin's role)
+- **GET /admin/users/stats/dashboard** – Dashboard statistics
 
-# Email (for verification)
-EMAIL_SERVICE=gmail
-EMAIL_USER=your-email@gmail.com
-EMAIL_PASSWORD=your-app-password
+#### ✅ Role-Based Access Control (RBAC):
 
-# Twilio (optional - for SMS)
-TWILIO_ACCOUNT_SID=your-sid
-TWILIO_AUTH_TOKEN=your-token
-TWILIO_PHONE_NUMBER=your-twilio-number
-```
+**Role Hierarchy**:
+1. **User** (1) – Basic access
+2. **Moderator** (2) – User management capabilities
+3. **Admin** (3) – Full user CRUD, can manage roles ≤ 3
+4. **SuperAdmin** (4) – System administration, can manage roles ≤ 4
+5. **Owner** (5) – Complete system control
 
-## Database Schema
+**Enforcement Rules**:
+- Admins can only create/modify/delete users with roles lower than their own
+- Role hierarchy validation on all admin operations
+- Admins cannot delete themselves
+- Automatic permission checks based on JWT token role
 
-### Tables
+#### ✅ Security Features:
 
-**Account** - Main user table
-```sql
-Account_ID, FirstName, LastName, Username (unique),
-Email (unique), Email_Verified, Phone (unique),
-Phone_Verified, Account_Role, Account_Status,
-Created_At, Updated_At
-```
+- **Password Security**: SHA256 hashing with unique 32-byte salts per user
+- **SQL Injection Prevention**: Parameterized queries throughout entire codebase
+- **JWT Security**: Signed tokens with configurable 14-day expiry
+- **Input Validation**: Comprehensive express-validator chains on all endpoints
+- **Timing-Safe Comparison**: Prevents timing attacks on password verification
+- **Account Protection**: Status checks (pending/active/suspended/locked)
+- **Email Enumeration Prevention**: Consistent responses for security
+- **Rate Limiting**: Verification endpoints protected from abuse
+- **Token Expiry**: Time-limited verification tokens and reset links
 
-**Account_Credential** - Password storage
-```sql
-Credential_ID, Account_ID (FK), Salted_Hash, Salt
-```
+#### ✅ Database Design:
 
-**Email_Verification** - Email verification tokens
-```sql
-Verification_ID, Account_ID (FK), Email,
-Verification_Token (unique), Token_Expires,
-Verified, Created_At
-```
+**Four Core Tables**:
+1. **Account** – User information, verification status, role, and account status
+2. **Account_Credential** – Salted password hashes
+3. **Email_Verification** – Email verification tokens with 48-hour expiry
+4. **Phone_Verification** – SMS codes with 15-minute expiry and attempt tracking
 
-**Phone_Verification** - SMS verification codes
-```sql
-Verification_ID, Account_ID (FK), Phone,
-Verification_Code, Code_Expires, Attempts,
-Verified, Created_At
-```
+**Optimizations**:
+- Performance indexes on email, phone, username, status
+- Foreign key constraints for data integrity
+- Timestamp tracking (created_at, updated_at)
+- Unique constraints on email, phone, username
 
-## API Documentation
+#### ✅ Comprehensive Documentation:
 
-- **Swagger UI**: http://localhost:8000/api-docs
+- **Swagger/OpenAPI**: Complete API specification hosted at /api-docs
+- **Educational Guides**: 29 markdown documents covering authentication, security, testing, validation, RBAC, and more
+- **Postman Collections**: Complete test collections for all endpoints including admin features
+- **Code Documentation**: Inline comments and TypeScript interfaces throughout
+
+#### ✅ TypeScript Implementation:
+
+- **Path Aliases**: Clean imports (@utilities, @middleware, @controllers, @models)
+- **Type Safety**: Strong typing with interfaces for requests, responses, and models
+- **Compile-Time Checks**: Catch errors before runtime
+- **IDE Support**: Enhanced autocomplete and refactoring
+
+#### ✅ Testing Infrastructure:
+
+- **Jest + Supertest**: Complete test framework setup
+- **Unit Tests**: Utility function tests (credentialing, validation, email, env config)
+- **Coverage Requirements**: 80% minimum for branches, functions, lines, statements
+- **Test Commands**: test, test:watch, test:coverage scripts configured
+
+#### ✅ Development Environment:
+
+- **Docker Compose**: PostgreSQL database with automatic initialization
+- **Hot Reload**: Nodemon with ts-node for development
+- **Linting**: ESLint with TypeScript support
+- **Formatting**: Prettier for consistent code style
+- **Environment Variables**: Comprehensive .env.example template
+
+#### ✅ Deployment:
+
+- **Platform**: Render (with Heroku configuration available)
+- **Production URL**: https://tcss460-group5-credentials-api.onrender.com
+- **Environment**: Production-ready with proper secret management
+- **Database**: External PostgreSQL database configuration
+
+---
+
+## 🔐 Security Best Practices Implemented
+
+This API demonstrates industry-standard security practices suitable for production environments:
+
+1. **Never store plain-text passwords** – All passwords hashed with SHA256 and unique salts
+2. **Parameterized SQL queries** – Complete protection against SQL injection
+3. **JWT token authentication** – Stateless authentication with signed tokens
+4. **Role-based authorization** – Granular access control with hierarchy enforcement
+5. **Input validation and sanitization** – Express-validator on all user inputs
+6. **Rate limiting** – Protection against brute force and abuse
+7. **Secure token generation** – Cryptographically random tokens for verification
+8. **Time-limited credentials** – Expiry on tokens, codes, and reset links
+9. **Account status management** – Ability to suspend/lock compromised accounts
+10. **Timing-safe comparisons** – Protection against timing attacks
+11. **CORS configuration** – Controlled cross-origin resource sharing
+12. **Environment-based secrets** – No hardcoded credentials in code
+
+---
+
+## 📊 API Statistics
+
+- **Total Endpoints**: 22+
+- **Public Routes**: 7 (authentication, verification, documentation)
+- **Protected Routes**: 4 (user password change, verification)
+- **Admin Routes**: 9 (full user management CRUD)
+- **Database Tables**: 4
+- **Role Levels**: 5 (hierarchical)
+- **Account Statuses**: 4 (pending, active, suspended, locked)
+
+---
+
+## 🎓 Educational Value
+
+This project serves as a comprehensive learning resource for:
+
+- **Backend Development**: Express.js API design patterns
+- **TypeScript**: Type-safe development practices
+- **Authentication**: JWT implementation and session management
+- **Authorization**: Role-based access control (RBAC)
+- **Security**: Industry-standard security practices (OWASP)
+- **Database Design**: PostgreSQL schema design and optimization
+- **Validation**: Input validation and sanitization strategies
+- **Testing**: Unit testing with Jest and Supertest
+- **DevOps**: Docker containerization and cloud deployment
+- **Documentation**: API documentation and educational materials
+
+
+---
+
+### API Access
+
+- **Local API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/api-docs
 - **Educational Docs**: http://localhost:8000/doc
-- **Postman Collection**: Available in `docs/postman-collection.json`
+- **Health Check**: http://localhost:8000/jwt_test
 
-## Testing
+---
 
-The template includes example tests for utilities. You should add tests for your validation and admin implementations:
+## 🧪 Testing
 
 ```bash
 # Run all tests
 npm test
 
-# Run specific test file
-npm test -- validationUtils.test.ts
+# Watch mode for development
+npm run test:watch
 
 # Generate coverage report
-npm test -- --coverage
+npm run test:coverage
 ```
 
-## TypeScript Path Aliases
-
-The project uses path aliases for clean imports:
-
-```typescript
-import { pool, sendSuccess, sendError } from '@utilities';
-import { checkToken, requireAdmin } from '@middleware';
-import { AuthController, AdminController } from '@controllers';
-import { IJwtRequest, UserRole, RoleName } from '@models';
-```
-
-**Available Aliases**:
-- `@core/*` → `src/core/*`
-- `@routes/*` → `src/routes/*`
-- `@controllers` → `src/controllers/index`
-- `@utilities` → `src/core/utilities/index`
-- `@middleware` → `src/core/middleware/index`
-- `@models` → `src/core/models/index`
-- `@db` → `src/core/utilities/database`
-- `@auth` → `src/core/utilities/credentialingUtils`
-
-## Security Features
-
-This template demonstrates important security practices:
-
-- **SHA256 password hashing** with unique salts per user
-- **Parameterized SQL queries** (SQL injection prevention)
-- **Timing-safe password comparison**
-- **JWT tokens** with configurable expiration
-- **Email verification** tokens (48-hour expiry)
-- **SMS verification** codes (15-minute expiry, attempt limiting)
-- **Role-based access control** (RBAC)
-
-## Educational Resources
-
-Check out the comprehensive guides in `docs-2.0/`:
-
-- Authentication Patterns
-- JWT Token Implementation
-- Password Hashing Best Practices
-- SQL Injection Prevention
-- Role-Based Access Control
-- Testing Strategies
-- And more!
-
-## Project Structure
-
-```
-template/
-├── src/
-│   ├── app.ts                     # Express app configuration
-│   ├── index.ts                   # Server entry point
-│   ├── routes/
-│   │   ├── open/                  # Public routes
-│   │   ├── closed/                # Protected routes
-│   │   └── admin/                 # ⚠️ TODO: Implement admin routes
-│   ├── controllers/
-│   │   ├── authController.ts      # Authentication logic
-│   │   ├── verificationController.ts
-│   │   └── adminController.ts     # ⚠️ TODO: Implement admin controller
-│   ├── core/
-│   │   ├── middleware/
-│   │   │   ├── jwt.ts            # ✅ JWT validation (working)
-│   │   │   ├── validation.ts     # ⚠️ TODO: Implement validation chains
-│   │   │   └── adminAuth.ts      # ⚠️ TODO: Implement admin middleware
-│   │   ├── utilities/            # ✅ All utilities working
-│   │   └── models/               # TypeScript interfaces
-│   └── test/                      # Test setup
-├── data/
-│   ├── init.sql                   # Database schema
-│   └── heroku.sql                # Heroku deployment schema
-├── docs/
-│   └── swagger.yaml              # API documentation
-├── docs-2.0/                     # Educational documentation
-├── ai.prof/                      # AI assistant instructions
-└── .claude/                      # Claude Code commands
-```
-
-## Contributing
-
-This is a student learning template. Focus on:
-
-1. Understanding the existing code patterns
-2. Implementing validation following the examples
-3. Building the admin API with proper authorization
-4. Writing tests for your implementations
-5. Documenting your code clearly
-
-## License
-
-MIT License - See LICENSE file for details
-
-## Support
-
-- **Documentation**: http://localhost:8000/doc (when running)
-- **API Docs**: http://localhost:8000/api-docs (Swagger UI)
-- **Course Resources**: Check Canvas for additional materials
+**Postman Collections**:
+- Import `docs/Complete_API_Testing.postman_collection.json` for comprehensive API testing
+- Import `docs/Admin_Role_Management_Testing.postman_collection.json` for admin feature testing
 
 ---
 
-**Remember**: This is an educational project. Focus on learning the concepts of authentication, authorization, validation, and security best practices. The goal is understanding, not production optimization.
+## 📝 Notes
 
-Good luck! 🚀
+- **Production Deployment**: Currently hosted on Render at https://tcss460-group5-credentials-api.onrender.com
+- **Database**: PostgreSQL with Docker for local development, external database for production
+- **TypeScript**: Full TypeScript implementation with strict type checking
+- **Path Aliases**: Clean import statements using @ prefixes for better code organization
+- **Email Service**: Uses Nodemailer with Gmail (configurable for other providers)
+- **SMS Service**: Email-to-SMS gateway (Twilio support available but optional
+

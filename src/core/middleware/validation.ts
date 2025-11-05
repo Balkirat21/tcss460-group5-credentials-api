@@ -2,7 +2,6 @@
 import { body, param, query, validationResult } from 'express-validator';
 import { Request, Response, NextFunction } from 'express';
 import { SMS_GATEWAYS } from '@models';
-import zxcvbn from 'zxcvbn';
 import { normalizePhoneNumber, isValidUSPhoneNumber } from '../utilities/phoneUtils';
 
 /**
@@ -38,9 +37,7 @@ export const validateLogin = [
         .trim()
         .notEmpty().withMessage('Email is required')
         .isEmail().withMessage('Must be a valid email')
-        .customSanitizer((value) => {
-            return value ? value.toLowerCase() : value;
-        }),
+        .normalizeEmail(),
     body('password')
         .notEmpty().withMessage('Password is required'),
     handleValidationErrors
@@ -52,8 +49,8 @@ export const validateLogin = [
  * - lastname: required, 1-100 characters
  * - email: required, valid email format, normalized
  * - username: required, 3-50 characters, alphanumeric with underscore/hyphen
- * - password: required, 8-128 characters with strength validation
- * - phone: required, at least 10 digits
+ * - password: required, 8-128 characters (simple validation - user friendly)
+ * - phone: required, valid US phone number with normalization
  * NOTE: No role validation - public registration always creates basic users
  */
 export const validateRegister = [
@@ -69,10 +66,7 @@ export const validateRegister = [
         .trim()
         .notEmpty().withMessage('Email is required')
         .isEmail().withMessage('Must be a valid email')
-        .customSanitizer((value) => {
-            // Only normalize if it's a valid email
-            return value ? value.toLowerCase() : value;
-        }),
+        .normalizeEmail(),
     body('username')
         .trim()
         .notEmpty().withMessage('Username is required')
@@ -80,18 +74,7 @@ export const validateRegister = [
         .matches(/^[a-zA-Z0-9_-]+$/).withMessage('Username can only contain letters, numbers, underscore, and hyphen'),
     body('password')
         .notEmpty().withMessage('Password is required')
-        .isLength({ min: 8, max: 128 }).withMessage('Password must be 8-128 characters')
-        .custom((value) => {
-            // Only check strength if password exists and meets length requirements
-            if (!value || value.length < 8 || value.length > 128) {
-                return true; // Let other validators handle this
-            }
-            const result = zxcvbn(value);
-            if (result.score < 2) {
-                throw new Error(`Password is too weak. ${result.feedback.warning || 'Use a stronger password with a mix of characters.'}`);
-            }
-            return true;
-        }),
+        .isLength({ min: 8, max: 128 }).withMessage('Password must be 8-128 characters'),
     body('phone')
         .trim()
         .notEmpty().withMessage('Phone is required')
@@ -122,16 +105,14 @@ export const validatePasswordResetRequest = [
         .trim()
         .notEmpty().withMessage('Email is required')
         .isEmail().withMessage('Must be a valid email')
-        .customSanitizer((value) => {
-            return value ? value.toLowerCase() : value;
-        }),
+        .normalizeEmail(),
     handleValidationErrors
 ];
 
 /**
  * Password reset validation (with token)
  * - token: required, trimmed
- * - password: required, 8-128 characters with strength validation
+ * - password: required, 8-128 characters (simple validation - user friendly)
  */
 export const validatePasswordReset = [
     body('token')
@@ -139,24 +120,14 @@ export const validatePasswordReset = [
         .notEmpty().withMessage('Reset token is required'),
     body('password')
         .notEmpty().withMessage('Password is required')
-        .isLength({ min: 8, max: 128 }).withMessage('Password must be 8-128 characters')
-        .custom((value) => {
-            if (!value || value.length < 8 || value.length > 128) {
-                return true; // Let other validators handle this
-            }
-            const result = zxcvbn(value);
-            if (result.score < 2) {
-                throw new Error(`Password is too weak. ${result.feedback.warning || 'Use a stronger password with a mix of characters.'}`);
-            }
-            return true;
-        }),
+        .isLength({ min: 8, max: 128 }).withMessage('Password must be 8-128 characters'),
     handleValidationErrors
 ];
 
 /**
  * Password change validation (for authenticated users)
  * - oldPassword: required
- * - newPassword: required, 8-128 characters, different from old password, strength validated
+ * - newPassword: required, 8-128 characters, different from old password
  */
 export const validatePasswordChange = [
     body('oldPassword')
@@ -165,21 +136,8 @@ export const validatePasswordChange = [
         .notEmpty().withMessage('New password is required')
         .isLength({ min: 8, max: 128 }).withMessage('New password must be 8-128 characters')
         .custom((value, { req }) => {
-            if (!value || !req.body.oldPassword) {
-                return true; // Let other validators handle this
-            }
             if (value === req.body.oldPassword) {
                 throw new Error('New password must be different from current password');
-            }
-            return true;
-        })
-        .custom((value) => {
-            if (!value || value.length < 8 || value.length > 128) {
-                return true; // Let other validators handle this
-            }
-            const result = zxcvbn(value);
-            if (result.score < 2) {
-                throw new Error(`Password is too weak. ${result.feedback.warning || 'Use a stronger password with a mix of characters.'}`);
             }
             return true;
         }),
@@ -278,10 +236,7 @@ export const validateAdminCreateUser = [
         .trim()
         .notEmpty().withMessage('Email is required')
         .isEmail().withMessage('Must be a valid email')
-        .customSanitizer((value) => {
-            // Only normalize if it's a valid email
-            return value ? value.toLowerCase() : value;
-        }),
+        .normalizeEmail(),
     body('username')
         .trim()
         .notEmpty().withMessage('Username is required')
@@ -289,18 +244,7 @@ export const validateAdminCreateUser = [
         .matches(/^[a-zA-Z0-9_-]+$/).withMessage('Username can only contain letters, numbers, underscore, and hyphen'),
     body('password')
         .notEmpty().withMessage('Password is required')
-        .isLength({ min: 8, max: 128 }).withMessage('Password must be 8-128 characters')
-        .custom((value) => {
-            // Only check strength if password exists and meets length requirements
-            if (!value || value.length < 8 || value.length > 128) {
-                return true; // Let other validators handle this
-            }
-            const result = zxcvbn(value);
-            if (result.score < 2) {
-                throw new Error(`Password is too weak. ${result.feedback.warning || 'Use a stronger password with a mix of characters.'}`);
-            }
-            return true;
-        }),
+        .isLength({ min: 8, max: 128 }).withMessage('Password must be 8-128 characters'),
     body('phone')
         .trim()
         .notEmpty().withMessage('Phone is required')
@@ -342,9 +286,7 @@ export const validateAdminUpdateUser = [
         .optional()
         .trim()
         .isEmail().withMessage('Must be a valid email')
-        .customSanitizer((value) => {
-            return value ? value.toLowerCase() : value;
-        }),
+        .normalizeEmail(),
     body('username')
         .optional()
         .trim()
@@ -369,22 +311,12 @@ export const validateAdminUpdateUser = [
 
 /**
  * Admin password reset validation
- * - newPassword: required, 8-128 characters with strength validation
+ * - newPassword: required, 8-128 characters (simple validation - user friendly)
  */
 export const validateAdminPasswordReset = [
     body('newPassword')
         .notEmpty().withMessage('New password is required')
-        .isLength({ min: 8, max: 128 }).withMessage('New password must be 8-128 characters')
-        .custom((value) => {
-            if (!value || value.length < 8 || value.length > 128) {
-                return true; // Let other validators handle this
-            }
-            const result = zxcvbn(value);
-            if (result.score < 2) {
-                throw new Error(`Password is too weak. ${result.feedback.warning || 'Use a stronger password with a mix of characters.'}`);
-            }
-            return true;
-        }),
+        .isLength({ min: 8, max: 128 }).withMessage('New password must be 8-128 characters'),
     handleValidationErrors
 ];
 
@@ -446,6 +378,8 @@ export const validateUserIdParam = [
  * - sortBy: optional, allowed values only
  * - sortOrder: optional, 'asc' or 'desc' (default: 'desc')
  */
+const SORT_WHITELIST = ['created_at','email','username','id'];
+
 export const validatePagination = [
     query('page')
         .optional()
@@ -478,64 +412,26 @@ export const validatePagination = [
 ];
 
 // ============================================
-// CUSTOM VALIDATORS
+// OPTIONAL VALIDATORS (from main)
 // ============================================
 
 /**
- * Enhanced password strength validator using zxcvbn
- * Requires password score of at least 3 (strong)
- * Use this for high-security scenarios (admin accounts, etc.)
+ * Custom password strength validator (optional, more strict)
+ * Add to password fields if you want stronger validation
+ * - Minimum 8 characters
+ * - At least one uppercase letter
+ * - At least one lowercase letter
+ * - At least one number
+ * - At least one special character (@$!%*?&)
+ * NOTE: Not currently used - available if needed
  */
-export const validateStrongPassword = body('password')
-    .custom((value) => {
-        if (!value || value.length < 8) {
-            return true; // Let other validators handle this
-        }
-        const result = zxcvbn(value);
-        if (result.score < 3) {
-            const suggestions = result.feedback.suggestions.join(' ') || 'Use a longer password with a mix of characters.';
-            throw new Error(`Password is not strong enough. ${suggestions}`);
-        }
-        return true;
-    });
-
-/**
- * Validate email domain is allowed (optional security enhancement)
- * Can be used to restrict registration to specific domains
- */
-export const validateEmailDomain = (allowedDomains: string[]) => {
-    return body('email').custom((value) => {
-        const domain = value.split('@')[1]?.toLowerCase();
-        if (!allowedDomains.includes(domain)) {
-            throw new Error(`Email domain not allowed. Allowed domains: ${allowedDomains.join(', ')}`);
-        }
-        return true;
-    });
-};
-
-/**
- * Validate that a field does not contain common SQL injection patterns
- * Additional security layer (already protected by parameterized queries)
- */
-export const validateNoSQLInjection = (fieldName: string) => {
-    return body(fieldName).custom((value) => {
-        const sqlPatterns = /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION|SCRIPT)\b)|(-{2})|(\bOR\b.*=.*)|(\bAND\b.*=.*)/i;
-        if (sqlPatterns.test(value)) {
-            throw new Error(`${fieldName} contains invalid characters`);
-        }
-        return true;
-    });
-};
-
-/**
- * Validate file extension if file uploads are added later
- */
-export const validateFileExtension = (allowedExtensions: string[]) => {
-    return body('filename').custom((value) => {
-        const ext = value.split('.').pop()?.toLowerCase();
-        if (!ext || !allowedExtensions.includes(ext)) {
-            throw new Error(`File type not allowed. Allowed types: ${allowedExtensions.join(', ')}`);
-        }
-        return true;
-    });
-};
+export const passwordStrength = [
+  body('password', 'Password is required').exists().bail().isString(),
+  body('password')
+    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
+    .matches(/[a-z]/).withMessage('Password must include a lowercase letter')
+    .matches(/[A-Z]/).withMessage('Password must include an uppercase letter')
+    .matches(/\d/).withMessage('Password must include a number')
+    .matches(/[^A-Za-z0-9]/).withMessage('Password must include a special character'),
+  handleValidationErrors
+];
