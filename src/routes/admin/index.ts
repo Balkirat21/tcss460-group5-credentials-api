@@ -1,6 +1,19 @@
 // src/routes/admin/index.ts
 import express, { Router, Request, Response } from 'express';
-import { checkToken, requireAdmin, requireRole, fetchTargetUserRole, checkRoleHierarchy } from '@middleware';
+import {
+    checkToken,
+    requireAdmin,
+    requireRole,
+    fetchTargetUserRole,
+    checkRoleHierarchy,
+    validateAdminCreateUser,
+    validateAdminUpdateUser,
+    validateAdminPasswordReset,
+    validateAdminRoleChange,
+    validateAdminSearch,
+    validateUserIdParam,
+    validatePagination
+} from '@middleware';
 import { UserRole } from '@models';
 import { AdminController } from '@controllers';
 
@@ -34,13 +47,10 @@ adminRoutes.use(checkToken);
  * }
  *
  * Admins can only create users with roles less than their own.
- *
- * TODO: Add validation middleware (validateCreateUser) when Person 1/2 completes validation
- * TODO: Connect to AdminController.createUser when Person 4 completes controller
  */
 adminRoutes.post('/users',
     requireAdmin,
-    // TODO: validateCreateUser, // Uncomment when Person 1/2 completes this
+    validateAdminCreateUser,
     AdminController.createUser
 );
 
@@ -61,13 +71,10 @@ adminRoutes.post('/users',
  * Response includes:
  * - users: array of user objects
  * - pagination: { page, limit, total, totalPages }
- *
- * TODO: Add validation middleware (validatePagination) when Person 2 completes validation
- * TODO: Connect to AdminController.getAllUsers when Person 4 completes controller
  */
 adminRoutes.get('/users',
     requireAdmin,
-    // TODO: validatePagination, // Uncomment when Person 2 completes this
+    validatePagination,
     AdminController.getAllUsers
 );
 
@@ -88,13 +95,10 @@ adminRoutes.get('/users',
  * - First name (partial match)
  * - Last name (partial match)
  * - Phone (partial match)
- *
- * TODO: Add validation middleware (validateSearch) when Person 1/2 completes validation
- * TODO: Connect to AdminController.searchUsers when Person 4 completes controller
  */
 adminRoutes.get('/users/search',
     requireAdmin,
-    // TODO: validateSearch, // Uncomment when Person 1/2 completes this
+    validateAdminSearch,
     AdminController.searchUsers
 );
 
@@ -110,13 +114,10 @@ adminRoutes.get('/users/search',
  * - Account status
  * - Role information
  * - Created/updated timestamps
- *
- * TODO: Add validation middleware (validateUserIdParam) when Person 2 completes validation
- * TODO: Connect to AdminController.getUserById when Person 4 completes controller
  */
 adminRoutes.get('/users/:id',
     requireAdmin,
-    // TODO: validateUserIdParam, // Uncomment when Person 2 completes this
+    validateUserIdParam,
     AdminController.getUserById
 );
 
@@ -137,15 +138,13 @@ adminRoutes.get('/users/:id',
  * }
  *
  * Note: Use separate endpoints to change role or password
- *
- * TODO: Add validation middleware (validateUpdateUser) when Person 1/2 completes validation
- * TODO: Connect to AdminController.updateUser when Person 4 completes controller
  */
 adminRoutes.put('/users/:id',
     requireAdmin,
     fetchTargetUserRole('id'),  // Fetches target user's role
     checkRoleHierarchy,         // Ensures requesting user has higher role
-    // TODO: validateUpdateUser, // Uncomment when Person 1/2 completes this
+    validateUserIdParam,
+    validateAdminUpdateUser,
     AdminController.updateUser
 );
 
@@ -161,15 +160,12 @@ adminRoutes.put('/users/:id',
  * - Optionally anonymizing data (depending on implementation)
  *
  * Note: Physical deletion may require Owner role (5)
- *
- * TODO: Add validation middleware (validateUserIdParam) when Person 2 completes validation
- * TODO: Connect to AdminController.deleteUser when Person 4 completes controller
  */
 adminRoutes.delete('/users/:id',
     requireAdmin,
     fetchTargetUserRole('id'),  // Fetches target user's role
     checkRoleHierarchy,         // Ensures requesting user has higher role
-    // TODO: validateUserIdParam, // Uncomment when Person 2 completes this
+    validateUserIdParam,
     AdminController.deleteUser
 );
 
@@ -187,15 +183,13 @@ adminRoutes.delete('/users/:id',
  *
  * Allows admin to set a new password without requiring the old one.
  * User should be notified via email about the password change.
- *
- * TODO: Add validation middleware (validateAdminPasswordReset) when Person 1/2 completes validation
- * TODO: Connect to AdminController.resetUserPassword when Person 4 completes controller
  */
 adminRoutes.put('/users/:id/password',
     requireAdmin,
     fetchTargetUserRole('id'),  // Fetches target user's role
     checkRoleHierarchy,         // Ensures requesting user has higher role
-    // TODO: validateAdminPasswordReset, // Uncomment when Person 1/2 completes this
+    validateUserIdParam,
+    validateAdminPasswordReset,
     AdminController.resetUserPassword
 );
 
@@ -225,15 +219,13 @@ adminRoutes.put('/users/:id/password',
  * ✅ Change Moderator (2) → User (1)
  * ❌ Change User (1) → Admin (3) or higher
  * ❌ Change Admin (3) to any role
- *
- * TODO: Add validation middleware (validateChangeRole) when Person 1/2 completes validation
- * TODO: Connect to AdminController.changeUserRole when Person 4 completes controller
  */
 adminRoutes.put('/users/:id/role',
     requireAdmin,
     fetchTargetUserRole('id'),  // Fetches target user's role
     checkRoleHierarchy,         // Ensures requesting user has higher role
-    // TODO: validateChangeRole, // Uncomment when Person 1/2 completes this
+    validateUserIdParam,
+    validateAdminRoleChange,
     AdminController.changeUserRole
 );
 

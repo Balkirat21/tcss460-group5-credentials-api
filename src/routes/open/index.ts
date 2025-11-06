@@ -1,15 +1,13 @@
 import express, { Router } from 'express';
 import { AuthController, VerificationController } from '@controllers';
-import { validateEmailToken } from '@middleware';
-import { docsRoutes } from './docs';
 import {
     validateLogin,
     validateRegister,
     validatePasswordResetRequest,
     validatePasswordReset,
-    handleValidationErrors,
-  } from '@core/middleware/validation';
-  
+    validateEmailToken
+} from '@middleware';
+import { docsRoutes } from './docs';
 
 const openRoutes: Router = express.Router();
 
@@ -18,52 +16,28 @@ const openRoutes: Router = express.Router();
 /**
  * Authenticate user and return JWT token
  * POST /auth/login
- * TODO: Add validation middleware (validateLogin)
  */
-openRoutes.post(
-    '/auth/login',
-    validateLogin,
-    handleValidationErrors,
-    AuthController.login
-  );
+openRoutes.post('/auth/login', validateLogin, AuthController.login);
 
 /**
  * Register a new user (always creates basic user with role 1)
  * POST /auth/register
- * TODO: Add validation middleware (validateRegister)
  */
-openRoutes.post(
-    '/auth/register',
-    validateRegister,
-    handleValidationErrors,
-    AuthController.register
-  );
+openRoutes.post('/auth/register', validateRegister, AuthController.register);
 
 // ===== PASSWORD RESET ROUTES =====
 
 /**
  * Request password reset (requires verified email)
  * POST /auth/password/reset-request
- * TODO: Add validation middleware (validatePasswordResetRequest)
  */
-openRoutes.post(
-    '/auth/password/reset-request',
-    validatePasswordResetRequest,
-    handleValidationErrors,
-    AuthController.requestPasswordReset
-  );
+openRoutes.post('/auth/password/reset-request', validatePasswordResetRequest, AuthController.requestPasswordReset);
 
 /**
  * Reset password with token
  * POST /auth/password/reset
- * TODO: Add validation middleware (validatePasswordReset)
  */
-openRoutes.post(
-    '/auth/password/reset',
-    validatePasswordReset,
-    handleValidationErrors,
-    AuthController.resetPassword
-  );
+openRoutes.post('/auth/password/reset', validatePasswordReset, AuthController.resetPassword);
 
 // ===== VERIFICATION ROUTES =====
 

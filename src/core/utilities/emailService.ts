@@ -2,6 +2,8 @@
 import * as nodemailer from 'nodemailer';
 import { getEnvVar, isProduction } from './envConfig';
 import { SMS_GATEWAYS } from '@models';
+import { renderEmailTemplate, preloadTemplates } from './emailTemplates';
+import { normalizePhoneNumber } from './phoneUtils';
 
 /**
  * Singleton email transporter instance
@@ -21,7 +23,10 @@ export const initializeEmailService = (): void => {
                 pass: getEnvVar('EMAIL_PASSWORD'),
             },
         });
-        
+
+        // Preload email templates for better performance
+        preloadTemplates();
+
         console.log('✅ Email service initialized successfully');
     } catch (error) {
         console.error('❌ Failed to initialize email service:', error);
@@ -77,8 +82,11 @@ export const sendEmail = async (options: {
  * Get carrier gateway for SMS
  */
 const getCarrierGateway = (carrier?: string): string => {
-    // In development, use mock gateway
-    if (!isProduction()) {
+    // Check if we should actually send SMS (production or explicitly enabled)
+    const shouldSendReal = isProduction() || getEnvVar('SEND_SMS_EMAILS') === 'true';
+
+    // In development, use mock gateway unless explicitly enabled
+    if (!shouldSendReal) {
         console.log('📱 Using mock SMS gateway for development');
         return SMS_GATEWAYS['mock'];
     }
@@ -102,18 +110,13 @@ export const sendSMSViaEmail = async (
     carrier?: string
 ): Promise<boolean> => {
     try {
-        // Clean phone number - remove all non-digits
-        const cleanPhone = phone.replace(/\D/g, '');
-        
-        // Remove country code if present (for US numbers)
-        const phoneDigits = cleanPhone.startsWith('1') && cleanPhone.length === 11
-            ? cleanPhone.substring(1)
-            : cleanPhone;
-        
+        // Normalize phone number using utility function
+        const phoneDigits = normalizePhoneNumber(phone);
+
         // Get carrier gateway
         const gateway = getCarrierGateway(carrier);
         const smsEmail = `${phoneDigits}${gateway}`;
-        
+
         const shouldSend = isProduction() || getEnvVar('SEND_SMS_EMAILS') === 'true';
         
         if (shouldSend) {
@@ -148,18 +151,15 @@ export const sendVerificationEmail = async (
     firstname: string,
     verificationUrl: string
 ): Promise<boolean> => {
+    const html = renderEmailTemplate('verify-email', {
+        firstname,
+        verificationUrl,
+    });
+
     return sendEmail({
         to: email,
         subject: 'Verify your Auth² account',
-        html: `
-            <h2>Welcome to Auth², ${firstname}!</h2>
-            <p>Please click the link below to verify your email address:</p>
-            <a href="${verificationUrl}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a>
-            <p>Or copy and paste this link into your browser:</p>
-            <p>${verificationUrl}</p>
-            <p>This link will expire in 48 hours.</p>
-            <p>If you didn't create an account, please ignore this email.</p>
-        `,
+        html,
     });
 };
 
@@ -171,18 +171,14 @@ export const sendPasswordResetEmail = async (
     firstname: string,
     resetUrl: string
 ): Promise<boolean> => {
+    const html = renderEmailTemplate('reset-password', {
+        firstname,
+        resetUrl,
+    });
+
     return sendEmail({
         to: email,
         subject: 'Password Reset Request - Auth²',
-        html: `
-            <h2>Password Reset Request</h2>
-            <p>Hi ${firstname},</p>
-            <p>You requested to reset your password. Click the link below to proceed:</p>
-            <a href="${resetUrl}" style="display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>
-            <p>Or copy and paste this link into your browser:</p>
-            <p>${resetUrl}</p>
-            <p>This link will expire in 1 hour.</p>
-            <p>If you didn't request this, please ignore this email and your password will remain unchanged.</p>
-        `,
+        html,
     });
 };

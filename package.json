@@ -67,8 +67,10 @@
         "@types/express": "^5.0.3",
         "@types/marked": "^5.0.2",
         "@types/node": "^22.10.0",
+        "@types/zxcvbn": "^4.4.5",
         "cors": "^2.8.5",
         "express": "^5.1.0",
+        "express-rate-limit": "^8.2.1",
         "express-validator": "^7.2.1",
         "highlight.js": "^11.11.1",
         "jsonwebtoken": "^9.0.2",
@@ -78,6 +80,7 @@
         "swagger-ui-express": "^5.0.1",
         "tsc-alias": "^1.8.16",
         "twilio": "^5.9.0",
-        "yamljs": "^0.3.0"
+        "yamljs": "^0.3.0",
+        "zxcvbn": "^4.4.2"
     }
 }

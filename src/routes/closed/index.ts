@@ -1,8 +1,11 @@
 import express, { Router } from 'express';
 import { AuthController, VerificationController } from '@controllers';
-import { checkToken, validatePhoneSend, validatePhoneVerify } from '@middleware';
-import { validatePasswordChange } from '@core/middleware/validation';
-
+import {
+    checkToken,
+    validatePasswordChange,
+    validatePhoneSend,
+    validatePhoneVerify
+} from '@middleware';
 
 const closedRoutes: Router = express.Router();
 
@@ -16,7 +19,6 @@ closedRoutes.use(checkToken);
 /**
  * Change password (requires authentication and old password)
  * POST /auth/user/password/change
- * TODO: Add validation middleware (validatePasswordChange)
  */
 closedRoutes.post('/auth/user/password/change', validatePasswordChange, AuthController.changePassword);
 
