@@ -20,8 +20,12 @@ export const initializeEmailService = (): void => {
                 user: getEnvVar('EMAIL_USER'),
                 pass: getEnvVar('EMAIL_PASSWORD'),
             },
+            // Timeout configuration to prevent indefinite hangs
+            connectionTimeout: 10000,  // 10 seconds to establish connection
+            greetingTimeout: 10000,    // 10 seconds for server greeting
+            socketTimeout: 10000,       // 10 seconds for socket inactivity
         });
-        
+
         console.log('✅ Email service initialized successfully');
     } catch (error) {
         console.error('❌ Failed to initialize email service:', error);

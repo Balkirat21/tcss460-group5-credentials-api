@@ -76,8 +76,26 @@ export class VerificationController {
             const baseUrl = getEnvVar('APP_BASE_URL', `http://localhost:${getEnvVar('PORT', '8000')}`);
             const verificationUrl = `${baseUrl}/auth/verify/email/confirm?token=${verificationToken}`;
 
-            // Send email
-            const emailSent = await sendVerificationEmail(email, firstname, verificationUrl);
+            // Send email with timeout protection
+            let emailSent: boolean;
+            try {
+                // Race the email send against a 15-second timeout
+                emailSent = await Promise.race([
+                    sendVerificationEmail(email, firstname, verificationUrl),
+                    new Promise<boolean>((_, reject) =>
+                        setTimeout(() => reject(new Error('Email send timeout after 15 seconds')), 15000)
+                    )
+                ]);
+            } catch (emailError) {
+                console.error('[VERIFY EMAIL] Send failed:', emailError);
+                sendError(
+                    response,
+                    500,
+                    'Email service temporarily unavailable. Please try again later.',
+                    ErrorCodes.SRVR_EMAIL_SEND_FAILED
+                );
+                return;
+            }
 
             if (!emailSent && !isDevelopment()) {
                 sendError(response, 500, 'Failed to send verification email', ErrorCodes.SRVR_EMAIL_SEND_FAILED);
