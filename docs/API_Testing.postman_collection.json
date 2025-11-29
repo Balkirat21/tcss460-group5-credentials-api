@@ -1,0 +1,380 @@
+{
+	"info": {
+		"_postman_id": "balkirat-testing-api",
+		"name": "Auth² API Testing",
+		"description": "Complete API testing for authentication, verification, and admin endpoints",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{jwt_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.data && response.data.accessToken) {",
+									"        pm.collectionVariables.set('jwt_token', response.data.accessToken);",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstname\": \"Test\",\n  \"lastname\": \"User\",\n  \"email\": \"test@example.com\",\n  \"username\": \"testuser\",\n  \"password\": \"StrongPass123!\",\n  \"phone\": \"4255551234\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/register",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "register"]
+						}
+					}
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.data && response.data.accessToken) {",
+									"        pm.collectionVariables.set('jwt_token', response.data.accessToken);",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"StrongPass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "login"]
+						}
+					}
+				},
+				{
+					"name": "Request Password Reset",
+					"request": {
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"test@example.com\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/password/reset-request",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "password", "reset-request"]
+						}
+					}
+				},
+				{
+					"name": "Change Password",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"oldPassword\": \"StrongPass123!\",\n  \"newPassword\": \"NewStrongPass456!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/user/password/change",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "user", "password", "change"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Email Verification",
+			"item": [
+				{
+					"name": "Send Email Verification",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.data && response.data.verificationUrl) {",
+									"        const url = response.data.verificationUrl;",
+									"        const token = url.split('token=')[1];",
+									"        pm.collectionVariables.set('email_token', token);",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}"}]},
+						"method": "POST",
+						"url": {
+							"raw": "{{base_url}}/auth/verify/email/send",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "verify", "email", "send"]
+						}
+					}
+				},
+				{
+					"name": "Confirm Email",
+					"request": {
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/auth/verify/email/confirm?token={{email_token}}",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "verify", "email", "confirm"],
+							"query": [{"key": "token", "value": "{{email_token}}"}]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Phone Verification",
+			"item": [
+				{
+					"name": "Send SMS Code",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {",
+									"    const response = pm.response.json();",
+									"    if (response.data && response.data.verificationCode) {",
+									"        pm.collectionVariables.set('sms_code', response.data.verificationCode);",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"4255551234\",\n  \"carrier\": \"tmobile\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/verify/phone/send",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "verify", "phone", "send"]
+						}
+					}
+				},
+				{
+					"name": "Verify SMS Code",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"phone\": \"4255551234\",\n  \"code\": \"{{sms_code}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/verify/phone/verify",
+							"host": ["{{base_url}}"],
+							"path": ["auth", "verify", "phone", "verify"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Admin",
+			"item": [
+				{
+					"name": "Get All Users",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}"}]},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/admin/users?page=1&limit=20",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users"],
+							"query": [
+								{"key": "page", "value": "1"},
+								{"key": "limit", "value": "20"}
+							]
+						}
+					}
+				},
+				{
+					"name": "Search Users",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}"}]},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/admin/users/search?query=test",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "search"],
+							"query": [{"key": "query", "value": "test"}]
+						}
+					}
+				},
+				{
+					"name": "Get User by ID",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}"}]},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/admin/users/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "1"]
+						}
+					}
+				},
+				{
+					"name": "Create User",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstname\": \"Admin\",\n  \"lastname\": \"Created\",\n  \"email\": \"admincreated@example.com\",\n  \"username\": \"admincreated\",\n  \"password\": \"AdminPass123!\",\n  \"phone\": \"4255559999\",\n  \"role\": 1\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users"]
+						}
+					}
+				},
+				{
+					"name": "Update User",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"firstname\": \"Updated\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "1"]
+						}
+					}
+				},
+				{
+					"name": "Change User Role",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}"}]},
+						"method": "PUT",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": 2\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users/1/role",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "1", "role"]
+						}
+					}
+				},
+				{
+					"name": "Reset User Password",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}"}]},
+						"method": "POST",
+						"header": [{"key": "Content-Type", "value": "application/json"}],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"newPassword\": \"ResetPass123!\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/admin/users/1/reset-password",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "1", "reset-password"]
+						}
+					}
+				},
+				{
+					"name": "Delete User",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}"}]},
+						"method": "DELETE",
+						"url": {
+							"raw": "{{base_url}}/admin/users/1",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "users", "1"]
+						}
+					}
+				},
+				{
+					"name": "Get Stats",
+					"request": {
+						"auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{jwt_token}}"}]},
+						"method": "GET",
+						"url": {
+							"raw": "{{base_url}}/admin/stats",
+							"host": ["{{base_url}}"],
+							"path": ["admin", "stats"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8000",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "email_token",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "sms_code",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

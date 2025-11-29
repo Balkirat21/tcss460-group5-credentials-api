@@ -193,12 +193,12 @@ export class VerificationController {
      */
     static async sendSMSVerification(request: IJwtRequest, response: Response): Promise<void> {
         const userId = request.claims.id;
-        const { carrier } = request.body;
+        const { phone, carrier } = request.body; // Get phone from request body
 
         try {
             // Get user info
             const userResult = await pool.query(
-                'SELECT FirstName, Phone, Phone_Verified FROM Account WHERE Account_ID = $1',
+                'SELECT FirstName, Phone_Verified FROM Account WHERE Account_ID = $1',
                 [userId]
             );
 
@@ -207,7 +207,7 @@ export class VerificationController {
                 return;
             }
 
-            const { firstname, phone, phone_verified } = userResult.rows[0];
+            const { firstname, phone_verified } = userResult.rows[0];
 
             if (phone_verified) {
                 sendError(response, 400, 'Phone is already verified', ErrorCodes.VRFY_ALREADY_VERIFIED);
@@ -279,16 +279,16 @@ export class VerificationController {
      */
     static async verifySMSCode(request: IJwtRequest, response: Response): Promise<void> {
         const userId = request.claims.id;
-        const { code } = request.body;
+        const { phone, code } = request.body; // Get both phone and code
 
         try {
-            // Find verification record
+            // Find verification record matching both user and phone
             const verificationResult = await pool.query(
                 `SELECT pv.*, a.Phone_Verified
                  FROM Phone_Verification pv
                  JOIN Account a ON pv.Account_ID = a.Account_ID
-                 WHERE pv.Account_ID = $1`,
-                [userId]
+                 WHERE pv.Account_ID = $1 AND pv.Phone = $2`,
+                [userId, phone]
             );
 
             if (verificationResult.rowCount === 0) {
@@ -337,16 +337,27 @@ export class VerificationController {
             // Execute phone verification transaction
             await executeTransactionWithResponse(
                 async (client) => {
-                    // Mark phone as verified
-                    await client.query(
-                        'UPDATE Account SET Phone_Verified = TRUE, Updated_At = NOW() WHERE Account_ID = $1',
-                        [userId]
+                    // Check if phone belongs to this user or another user
+                    const phoneCheck = await client.query(
+                        'SELECT Account_ID FROM Account WHERE Phone = $1',
+                        [phone]
                     );
 
-                    // Delete verification code (single use)
+                    // If phone exists and belongs to someone else, reject
+                    if (phoneCheck.rowCount > 0 && phoneCheck.rows[0].account_id !== userId) {
+                        throw new Error('Phone number is already associated with another account');
+                    }
+
+                    // Update phone and mark as verified
                     await client.query(
-                        'DELETE FROM Phone_Verification WHERE Account_ID = $1',
-                        [userId]
+                        'UPDATE Account SET Phone = $2, Phone_Verified = TRUE, Updated_At = NOW() WHERE Account_ID = $1',
+                        [userId, phone]
+                    );
+
+                    // Mark verification record as complete
+                    await client.query(
+                        'UPDATE Phone_Verification SET Verified = TRUE WHERE Account_ID = $1 AND Phone = $2',
+                        [userId, phone]
                     );
 
                     return null;
