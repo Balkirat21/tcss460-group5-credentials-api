@@ -1,37 +1,57 @@
 // src/core/utilities/emailService.ts
 import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 import { getEnvVar, isProduction } from './envConfig';
 import { SMS_GATEWAYS } from '@models';
 import { renderEmailTemplate, preloadTemplates } from './emailTemplates';
 import { normalizePhoneNumber } from './phoneUtils';
 
 /**
- * Singleton email transporter instance
+ * Singleton instances for email providers
  */
 let emailTransporter: nodemailer.Transporter | null = null;
+let resendClient: Resend | null = null;
 
 /**
- * Initialize email transporter
+ * Get the email provider type
+ */
+const getEmailProvider = (): 'resend' | 'smtp' => {
+    const provider = getEnvVar('EMAIL_PROVIDER', 'smtp').toLowerCase();
+    return provider === 'resend' ? 'resend' : 'smtp';
+};
+
+/**
+ * Initialize email service
  * Call this once at application startup
  */
 export const initializeEmailService = (): void => {
     try {
-        emailTransporter = nodemailer.createTransport({
-            service: getEnvVar('EMAIL_SERVICE', 'gmail'),
-            auth: {
-                user: getEnvVar('EMAIL_USER'),
-                pass: getEnvVar('EMAIL_PASSWORD'),
-            },
-            // Timeout configuration to prevent indefinite hangs
-            connectionTimeout: 10000,  // 10 seconds to establish connection
-            greetingTimeout: 10000,    // 10 seconds for server greeting
-            socketTimeout: 10000,       // 10 seconds for socket inactivity
-        });
+        const provider = getEmailProvider();
+
+        if (provider === 'resend') {
+            // Initialize Resend
+            const apiKey = getEnvVar('RESEND_API_KEY');
+            resendClient = new Resend(apiKey);
+            console.log('✅ Email service initialized successfully (Resend)');
+        } else {
+            // Initialize SMTP (nodemailer)
+            emailTransporter = nodemailer.createTransport({
+                service: getEnvVar('EMAIL_SERVICE', 'gmail'),
+                auth: {
+                    user: getEnvVar('EMAIL_USER'),
+                    pass: getEnvVar('EMAIL_PASSWORD'),
+                },
+                // Timeout configuration to prevent indefinite hangs
+                connectionTimeout: 10000,  // 10 seconds to establish connection
+                greetingTimeout: 10000,    // 10 seconds for server greeting
+                socketTimeout: 10000,       // 10 seconds for socket inactivity
+            });
+            console.log('✅ Email service initialized successfully (SMTP)');
+        }
 
         // Preload email templates for better performance
         preloadTemplates();
 
-        console.log('✅ Email service initialized successfully');
     } catch (error) {
         console.error('❌ Failed to initialize email service:', error);
         throw error;
@@ -39,17 +59,27 @@ export const initializeEmailService = (): void => {
 };
 
 /**
- * Get the email transporter instance
+ * Get the SMTP transporter instance
  */
 const getTransporter = (): nodemailer.Transporter => {
     if (!emailTransporter) {
-        throw new Error('Email service not initialized. Call initializeEmailService() first.');
+        throw new Error('SMTP transporter not initialized. Call initializeEmailService() first.');
     }
     return emailTransporter;
 };
 
 /**
- * Send an email
+ * Get the Resend client instance
+ */
+const getResendClient = (): Resend => {
+    if (!resendClient) {
+        throw new Error('Resend client not initialized. Call initializeEmailService() first.');
+    }
+    return resendClient;
+};
+
+/**
+ * Send an email using the configured provider
  */
 export const sendEmail = async (options: {
     to: string;
@@ -59,13 +89,34 @@ export const sendEmail = async (options: {
 }): Promise<boolean> => {
     try {
         const shouldSend = isProduction() || getEnvVar('SEND_EMAILS') === 'true';
-        
+
         if (shouldSend) {
-            await getTransporter().sendMail({
-                from: getEnvVar('EMAIL_FROM', getEnvVar('EMAIL_USER')),
-                ...options,
-            });
-            console.log(`📧 Email sent to ${options.to}`);
+            const provider = getEmailProvider();
+            const from = getEnvVar('EMAIL_FROM', 'onboarding@resend.dev');
+
+            if (provider === 'resend') {
+                // Send via Resend
+                const result = await getResendClient().emails.send({
+                    from,
+                    to: options.to,
+                    subject: options.subject,
+                    html: options.html || options.text || '',
+                });
+
+                if (result.error) {
+                    console.error('Resend error:', result.error);
+                    return false;
+                }
+
+                console.log(`📧 Email sent via Resend to ${options.to} (ID: ${result.data?.id})`);
+            } else {
+                // Send via SMTP
+                await getTransporter().sendMail({
+                    from,
+                    ...options,
+                });
+                console.log(`📧 Email sent via SMTP to ${options.to}`);
+            }
         } else {
             console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
             console.log('📧 MOCK EMAIL (Development Mode)');
@@ -74,7 +125,7 @@ export const sendEmail = async (options: {
             if (options.text) console.log(`Text: ${options.text}`);
             console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         }
-        
+
         return true;
     } catch (error) {
         console.error('Failed to send email:', error);
@@ -107,6 +158,7 @@ const getCarrierGateway = (carrier?: string): string => {
 
 /**
  * Send SMS via Email-to-SMS gateway
+ * Note: This always uses SMTP, even if Resend is the main email provider
  */
 export const sendSMSViaEmail = async (
     phone: string,
@@ -122,8 +174,9 @@ export const sendSMSViaEmail = async (
         const smsEmail = `${phoneDigits}${gateway}`;
 
         const shouldSend = isProduction() || getEnvVar('SEND_SMS_EMAILS') === 'true';
-        
+
         if (shouldSend) {
+            // SMS via email always uses SMTP transporter (not Resend)
             await getTransporter().sendMail({
                 from: getEnvVar('EMAIL_USER'),
                 to: smsEmail,
@@ -139,7 +192,7 @@ export const sendSMSViaEmail = async (
             console.log(`📨 Message: ${message}`);
             console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         }
-        
+
         return true;
     } catch (error) {
         console.error('Failed to send SMS via email gateway:', error);
