@@ -1,57 +1,28 @@
 // src/core/utilities/emailService.ts
 import * as nodemailer from 'nodemailer';
-import { Resend } from 'resend';
 import { getEnvVar, isProduction } from './envConfig';
 import { SMS_GATEWAYS } from '@models';
-import { renderEmailTemplate, preloadTemplates } from './emailTemplates';
-import { normalizePhoneNumber } from './phoneUtils';
 
 /**
- * Singleton instances for email providers
+ * Singleton email transporter instance
  */
 let emailTransporter: nodemailer.Transporter | null = null;
-let resendClient: Resend | null = null;
 
 /**
- * Get the email provider type
- */
-const getEmailProvider = (): 'resend' | 'smtp' => {
-    const provider = getEnvVar('EMAIL_PROVIDER', 'smtp').toLowerCase();
-    return provider === 'resend' ? 'resend' : 'smtp';
-};
-
-/**
- * Initialize email service
+ * Initialize email transporter
  * Call this once at application startup
  */
 export const initializeEmailService = (): void => {
     try {
-        const provider = getEmailProvider();
-
-        if (provider === 'resend') {
-            // Initialize Resend
-            const apiKey = getEnvVar('RESEND_API_KEY');
-            resendClient = new Resend(apiKey);
-            console.log('✅ Email service initialized successfully (Resend)');
-        } else {
-            // Initialize SMTP (nodemailer)
-            emailTransporter = nodemailer.createTransport({
-                service: getEnvVar('EMAIL_SERVICE', 'gmail'),
-                auth: {
-                    user: getEnvVar('EMAIL_USER'),
-                    pass: getEnvVar('EMAIL_PASSWORD'),
-                },
-                // Timeout configuration to prevent indefinite hangs
-                connectionTimeout: 10000,  // 10 seconds to establish connection
-                greetingTimeout: 10000,    // 10 seconds for server greeting
-                socketTimeout: 10000,       // 10 seconds for socket inactivity
-            });
-            console.log('✅ Email service initialized successfully (SMTP)');
-        }
-
-        // Preload email templates for better performance
-        preloadTemplates();
-
+        emailTransporter = nodemailer.createTransport({
+            service: getEnvVar('EMAIL_SERVICE', 'gmail'),
+            auth: {
+                user: getEnvVar('EMAIL_USER'),
+                pass: getEnvVar('EMAIL_PASSWORD'),
+            },
+        });
+        
+        console.log('✅ Email service initialized successfully');
     } catch (error) {
         console.error('❌ Failed to initialize email service:', error);
         throw error;
@@ -59,27 +30,17 @@ export const initializeEmailService = (): void => {
 };
 
 /**
- * Get the SMTP transporter instance
+ * Get the email transporter instance
  */
 const getTransporter = (): nodemailer.Transporter => {
     if (!emailTransporter) {
-        throw new Error('SMTP transporter not initialized. Call initializeEmailService() first.');
+        throw new Error('Email service not initialized. Call initializeEmailService() first.');
     }
     return emailTransporter;
 };
 
 /**
- * Get the Resend client instance
- */
-const getResendClient = (): Resend => {
-    if (!resendClient) {
-        throw new Error('Resend client not initialized. Call initializeEmailService() first.');
-    }
-    return resendClient;
-};
-
-/**
- * Send an email using the configured provider
+ * Send an email
  */
 export const sendEmail = async (options: {
     to: string;
@@ -89,34 +50,13 @@ export const sendEmail = async (options: {
 }): Promise<boolean> => {
     try {
         const shouldSend = isProduction() || getEnvVar('SEND_EMAILS') === 'true';
-
+        
         if (shouldSend) {
-            const provider = getEmailProvider();
-            const from = getEnvVar('EMAIL_FROM', 'onboarding@resend.dev');
-
-            if (provider === 'resend') {
-                // Send via Resend
-                const result = await getResendClient().emails.send({
-                    from,
-                    to: options.to,
-                    subject: options.subject,
-                    html: options.html || options.text || '',
-                });
-
-                if (result.error) {
-                    console.error('Resend error:', result.error);
-                    return false;
-                }
-
-                console.log(`📧 Email sent via Resend to ${options.to} (ID: ${result.data?.id})`);
-            } else {
-                // Send via SMTP
-                await getTransporter().sendMail({
-                    from,
-                    ...options,
-                });
-                console.log(`📧 Email sent via SMTP to ${options.to}`);
-            }
+            await getTransporter().sendMail({
+                from: getEnvVar('EMAIL_FROM', getEnvVar('EMAIL_USER')),
+                ...options,
+            });
+            console.log(`📧 Email sent to ${options.to}`);
         } else {
             console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
             console.log('📧 MOCK EMAIL (Development Mode)');
@@ -125,7 +65,7 @@ export const sendEmail = async (options: {
             if (options.text) console.log(`Text: ${options.text}`);
             console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         }
-
+        
         return true;
     } catch (error) {
         console.error('Failed to send email:', error);
@@ -137,11 +77,8 @@ export const sendEmail = async (options: {
  * Get carrier gateway for SMS
  */
 const getCarrierGateway = (carrier?: string): string => {
-    // Check if we should actually send SMS (production or explicitly enabled)
-    const shouldSendReal = isProduction() || getEnvVar('SEND_SMS_EMAILS') === 'true';
-
-    // In development, use mock gateway unless explicitly enabled
-    if (!shouldSendReal) {
+    // In development, use mock gateway
+    if (!isProduction()) {
         console.log('📱 Using mock SMS gateway for development');
         return SMS_GATEWAYS['mock'];
     }
@@ -158,7 +95,6 @@ const getCarrierGateway = (carrier?: string): string => {
 
 /**
  * Send SMS via Email-to-SMS gateway
- * Note: This always uses SMTP, even if Resend is the main email provider
  */
 export const sendSMSViaEmail = async (
     phone: string,
@@ -166,17 +102,21 @@ export const sendSMSViaEmail = async (
     carrier?: string
 ): Promise<boolean> => {
     try {
-        // Normalize phone number using utility function
-        const phoneDigits = normalizePhoneNumber(phone);
-
+        // Clean phone number - remove all non-digits
+        const cleanPhone = phone.replace(/\D/g, '');
+        
+        // Remove country code if present (for US numbers)
+        const phoneDigits = cleanPhone.startsWith('1') && cleanPhone.length === 11
+            ? cleanPhone.substring(1)
+            : cleanPhone;
+        
         // Get carrier gateway
         const gateway = getCarrierGateway(carrier);
         const smsEmail = `${phoneDigits}${gateway}`;
-
+        
         const shouldSend = isProduction() || getEnvVar('SEND_SMS_EMAILS') === 'true';
-
+        
         if (shouldSend) {
-            // SMS via email always uses SMTP transporter (not Resend)
             await getTransporter().sendMail({
                 from: getEnvVar('EMAIL_USER'),
                 to: smsEmail,
@@ -192,7 +132,7 @@ export const sendSMSViaEmail = async (
             console.log(`📨 Message: ${message}`);
             console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
         }
-
+        
         return true;
     } catch (error) {
         console.error('Failed to send SMS via email gateway:', error);
@@ -208,15 +148,18 @@ export const sendVerificationEmail = async (
     firstname: string,
     verificationUrl: string
 ): Promise<boolean> => {
-    const html = renderEmailTemplate('verify-email', {
-        firstname,
-        verificationUrl,
-    });
-
     return sendEmail({
         to: email,
         subject: 'Verify your Auth² account',
-        html,
+        html: `
+            <h2>Welcome to Auth², ${firstname}!</h2>
+            <p>Please click the link below to verify your email address:</p>
+            <a href="${verificationUrl}" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 5px;">Verify Email</a>
+            <p>Or copy and paste this link into your browser:</p>
+            <p>${verificationUrl}</p>
+            <p>This link will expire in 48 hours.</p>
+            <p>If you didn't create an account, please ignore this email.</p>
+        `,
     });
 };
 
@@ -228,14 +171,18 @@ export const sendPasswordResetEmail = async (
     firstname: string,
     resetUrl: string
 ): Promise<boolean> => {
-    const html = renderEmailTemplate('reset-password', {
-        firstname,
-        resetUrl,
-    });
-
     return sendEmail({
         to: email,
         subject: 'Password Reset Request - Auth²',
-        html,
+        html: `
+            <h2>Password Reset Request</h2>
+            <p>Hi ${firstname},</p>
+            <p>You requested to reset your password. Click the link below to proceed:</p>
+            <a href="${resetUrl}" style="display: inline-block; padding: 10px 20px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px;">Reset Password</a>
+            <p>Or copy and paste this link into your browser:</p>
+            <p>${resetUrl}</p>
+            <p>This link will expire in 1 hour.</p>
+            <p>If you didn't request this, please ignore this email and your password will remain unchanged.</p>
+        `,
     });
 };
