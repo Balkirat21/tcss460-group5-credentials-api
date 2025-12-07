@@ -356,7 +356,6 @@ npm run test:coverage
 
 ## 📝 Notes
 
-- **Production Deployment**: Currently hosted on Render at https://tcss460-group5-credentials-api.onrender.com
 - **Database**: PostgreSQL with Docker for local development, external database for production
 - **TypeScript**: Full TypeScript implementation with strict type checking
 - **Path Aliases**: Clean import statements using @ prefixes for better code organization
