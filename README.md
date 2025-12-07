@@ -2,23 +2,23 @@
 
 This repository contains the Group 5 Credentials Web API project for the TCSS 460 Client/Server Programming course. This is a comprehensive **Identity and Access Management (IAM) API** built with Node.js, Express, TypeScript, and PostgreSQL, providing secure user authentication, authorization, and role-based access control.
 
-🌐 **Hosted Credentials API URL (Render)**: https://tcss460-group5-credentials-api.onrender.com
+🌐 **Hosted Credentials API URL (Heroku)**: https://credentials-api-f267039abb9d.herokuapp.com/
 
-📚 **API Documentation**: https://tcss460-group5-credentials-api.onrender.com/api-docs
+📚 **API Documentation**: https://credentials-api-f267039abb9d.herokuapp.com/api-docs/
 
 ---
 
 ## 🚀 Sprint Contribution
 
 ### Group Members
-
+ren
 ### **Balkirat Singh**  
 Set up the **PostgreSQL database** for the Credentials API, created schemas and relations, and implemented **admin endpoints**.  
-Also assisted with integration between authentication and show routes. Supported deployment to Render and database debugging.
+Also assisted with integration between authentication and show routes. Supported deployment to Heroku and database debugging.
 
 ### **Kobe Benavente**  
 Implemented and tested **admin-related routes**, working closely on role-based access and endpoint validation.  
-Contributed to middleware refinement and assisted in refactoring shared logic across routes.
+Contributed to middleware refinement and assisted in refactoring shared logic across routes. 
 
 ### **MD Khan (Shanto)**  
 Developed the **email verification and confirmation** flow for the Credentials API.  
