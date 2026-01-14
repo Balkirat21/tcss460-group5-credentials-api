@@ -16,6 +16,9 @@
  * @see {@link ../docs-2.0/environment-configuration.md} for configuration patterns
  */
 
+// Load environment variables from .env file before anything else
+import 'dotenv/config';
+
 import { app } from './app';
 import { connectToDatabase, disconnectFromDatabase } from '@db';
 import { validateEnv, initializeEmailService } from '@utilities';

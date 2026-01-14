@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Auth²</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+            text-align: center;
+            color: #ffffff;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .content h2 {
+            color: #333333;
+            margin-top: 0;
+            font-size: 24px;
+        }
+        .content p {
+            color: #666666;
+            margin: 16px 0;
+            font-size: 16px;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 24px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+            border-top: 1px solid #e9ecef;
+        }
+        .success-badge {
+            background-color: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .success-badge p {
+            margin: 0;
+            color: #155724;
+            font-size: 18px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Welcome to Auth²!</h1>
+        </div>
+        <div class="content">
+            <h2>Your Account is Active</h2>
+            <p>Hi {{firstname}},</p>
+            <p>Congratulations! Your email has been verified and your Auth² account is now fully activated.</p>
+
+            <div class="success-badge">
+                <p>✅ Email Verified Successfully</p>
+            </div>
+
+            <p>You can now enjoy full access to all Auth² features:</p>
+            <ul>
+                <li>Secure authentication and authorization</li>
+                <li>Profile management</li>
+                <li>Account security features</li>
+                <li>Two-factor authentication (coming soon)</li>
+            </ul>
+
+            <p>If you have any questions or need assistance, feel free to reach out to our support team.</p>
+            <p>Thank you for choosing Auth²!</p>
+        </div>
+        <div class="footer">
+            <p>This is an automated message, please do not reply to this email.</p>
+            <p>&copy; 2025 Auth² Platform. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
